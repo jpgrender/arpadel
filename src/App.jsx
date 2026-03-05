@@ -220,6 +220,74 @@ const TABS=[
   {id:"ranking",  icon:"🏆",label:"Ranking"},
 ];
 
+
+// ── Read-only banner ─────────────────────────────────────────────────────────
+function ReadOnlyBanner({isAdmin}) {
+  if (isAdmin) return null;
+  return (
+    <div style={{background:"#0066ff15",border:"1px solid #0066ff33",borderRadius:10,padding:"10px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
+      <span style={{fontSize:16}}>👁</span>
+      <span style={{fontSize:12,color:"#6ab4ff"}}>Modo visualización — solo los admins pueden hacer cambios</span>
+    </div>
+  );
+}
+
+// ── Users management modal (standalone to avoid React hooks error) ────────────
+function UsersMgmtModal({users, onClose, onSave, notify}) {
+  const [editingUser, setEditingUser] = useState(null);
+  const [form, setForm] = useState({});
+
+  function startEdit(u) { setEditingUser(u.id); setForm({name:u.name, pin:u.pin, role:u.role}); }
+  function saveU() {
+    const u = users.find(x => x.id === editingUser);
+    onSave({...u, ...form});
+    setEditingUser(null);
+  }
+
+  return (
+    <div style={{position:"fixed",inset:0,background:"#000000cc",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:200}} onClick={onClose}>
+      <div style={{background:"#181828",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:420,border:"1px solid #ffffff15",maxHeight:"80vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
+        <div style={{width:40,height:4,background:"#ffffff20",borderRadius:2,margin:"0 auto 20px"}} />
+        <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:4}}>⚙️ Gestión de usuarios</div>
+        <div style={{fontSize:12,color:"#555",marginBottom:20}}>Cambiá roles y PINs. Solo los admins pueden hacer esto.</div>
+        {users.map(u=>(
+          <div key={u.id} style={{background:"#ffffff07",borderRadius:12,padding:"12px 14px",marginBottom:8,border:"1px solid #ffffff0d"}}>
+            {editingUser===u.id?(
+              <div>
+                <div style={{display:"flex",gap:8,marginBottom:8}}>
+                  <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Nombre" style={{width:"100%",background:"#ffffff10",border:"1px solid #ffffff20",borderRadius:10,padding:"8px 10px",color:"#fff",fontSize:13,outline:"none",flex:2}} />
+                  <input value={form.pin} onChange={e=>setForm(f=>({...f,pin:e.target.value}))} placeholder="PIN" maxLength={6} style={{width:"100%",background:"#ffffff10",border:"1px solid #ffffff20",borderRadius:10,padding:"8px 10px",color:"#fff",fontSize:13,outline:"none",flex:1}} />
+                </div>
+                <div style={{display:"flex",gap:8,marginBottom:8}}>
+                  {["admin","user"].map(r=>(
+                    <div key={r} onClick={()=>setForm(f=>({...f,role:r}))} style={{flex:1,padding:"8px",borderRadius:8,border:form.role===r?"2px solid #0066ff":"2px solid #ffffff15",background:form.role===r?"#0066ff22":"transparent",textAlign:"center",cursor:"pointer",fontSize:12,color:form.role===r?"#6ab4ff":"#555",fontWeight:700}}>
+                      {r==="admin"?"⚡ Admin":"👁 Viewer"}
+                    </div>
+                  ))}
+                </div>
+                <div style={{display:"flex",gap:8}}>
+                  <button onClick={saveU} style={{flex:1,background:"#00d4aa",border:"none",borderRadius:8,padding:"10px",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>Guardar</button>
+                  <button onClick={()=>setEditingUser(null)} style={{flex:1,background:"transparent",border:"1px solid #ffffff15",borderRadius:8,padding:"10px",color:"#666",fontSize:13,cursor:"pointer"}}>Cancelar</button>
+                </div>
+              </div>
+            ):(
+              <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <Avatar name={u.name} pts={200} size={32} />
+                <div style={{flex:1}}>
+                  <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{u.name}</div>
+                  <div style={{fontSize:10,color:"#444"}}>PIN: {"•".repeat(u.pin.length)}</div>
+                </div>
+                <RoleBadge role={u.role} />
+                <button onClick={()=>startEdit(u)} style={{background:"transparent",border:"1px solid #ffffff15",borderRadius:8,padding:"6px 10px",color:"#666",fontSize:11,cursor:"pointer"}}>✏️</button>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
   // ── Firebase state ──────────────────────────────────────────────────────────
@@ -253,33 +321,35 @@ export default function App() {
   // ── Firestore subscriptions ─────────────────────────────────────────────────
   useEffect(()=>{
     let n=0;
-    const check=()=>{ n++; if(n>=4) setLoading(false); };
+    const needed=4;
+    const check=()=>{ n++; if(n>=needed) setLoading(false); };
+    const onErr=(label)=>(err)=>{ console.error(label,err); check(); };
 
-    const unsubP = onSnapshot(collection(db,"players"), snap=>{
-      setPlayers(snap.docs.map(d=>d.data()));
-      check();
-    });
-    const unsubU = onSnapshot(collection(db,"users"), snap=>{
-      setUsers(snap.docs.map(d=>d.data()));
-      check();
-    });
-    const unsubS = onSnapshot(doc(db,"config","session"), snap=>{
-      if(snap.exists()) setSession(snap.data());
-      check();
-    });
-    const unsubPH = onSnapshot(doc(db,"config","pairHistory"), snap=>{
-      if(snap.exists()) setPairHistory(snap.data());
-      check();
-    });
+    const unsubP = onSnapshot(collection(db,"players"),
+      snap=>{ setPlayers(snap.docs.map(d=>d.data())); check(); },
+      onErr("players"));
+    const unsubU = onSnapshot(collection(db,"users"),
+      snap=>{ setUsers(snap.docs.map(d=>d.data())); check(); },
+      onErr("users"));
+    const unsubS = onSnapshot(doc(db,"config","session"),
+      snap=>{ if(snap.exists()) setSession(snap.data()); check(); },
+      onErr("session"));
+    const unsubPH = onSnapshot(doc(db,"config","pairHistory"),
+      snap=>{ if(snap.exists()) setPairHistory(snap.data()); check(); },
+      onErr("pairHistory"));
     const unsubH = onSnapshot(
       query(collection(db,"matchHistory"),orderBy("timestamp","desc"),limit(50)),
-      snap=>setMatchHistory(snap.docs.map(d=>{ const d2=d.data(); return {...d2,date:d2.date??""}; }))
+      snap=>setMatchHistory(snap.docs.map(d=>{ const d2=d.data(); return {...d2,date:d2.date??""}; })),
+      (err)=>console.error("matchHistory",err)
     );
+
+    // Auto-timeout: if Firebase doesn't respond in 8s, unblock the UI
+    const timeout = setTimeout(()=>{ if(n<needed) setLoading(false); }, 8000);
 
     // Seed Firestore on first run
     seedIfEmpty().catch(console.error);
 
-    return ()=>{ unsubP(); unsubU(); unsubS(); unsubPH(); unsubH(); };
+    return ()=>{ unsubP(); unsubU(); unsubS(); unsubPH(); unsubH(); clearTimeout(timeout); };
   },[]);
 
   // ── Session write helper ────────────────────────────────────────────────────
@@ -453,68 +523,9 @@ export default function App() {
     notify(`Rotación ${rotId+1} guardada ✓`);
   }
 
-  // ── Users management modal ──────────────────────────────────────────────────
-  const UsersMgmtModal = ()=>{
-    const [editingUser,setEditingUser]=useState(null);
-    const [form,setForm]=useState({});
-    function startEdit(u){ setEditingUser(u.id); setForm({name:u.name,pin:u.pin,role:u.role}); }
-    function saveU(){
-      const u=users.find(x=>x.id===editingUser);
-      saveUser({...u,...form}).catch(console.error);
-      setEditingUser(null);
-      notify("Usuario actualizado ✓");
-    }
-    return (
-      <div style={{position:"fixed",inset:0,background:"#000000cc",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:200}} onClick={()=>setShowUsersMgmt(false)}>
-        <div style={{background:"#181828",borderRadius:"20px 20px 0 0",padding:"24px 20px 40px",width:"100%",maxWidth:420,border:"1px solid #ffffff15",maxHeight:"80vh",overflowY:"auto"}} onClick={e=>e.stopPropagation()}>
-          <div style={{width:40,height:4,background:"#ffffff20",borderRadius:2,margin:"0 auto 20px"}} />
-          <div style={{fontSize:16,fontWeight:900,color:"#fff",marginBottom:4}}>⚙️ Gestión de usuarios</div>
-          <div style={{fontSize:12,color:"#555",marginBottom:20}}>Cambiá roles y PINs. Solo los admins pueden hacer esto.</div>
-          {users.map(u=>(
-            <div key={u.id} style={{background:"#ffffff07",borderRadius:12,padding:"12px 14px",marginBottom:8,border:"1px solid #ffffff0d"}}>
-              {editingUser===u.id?(
-                <div>
-                  <div style={{display:"flex",gap:8,marginBottom:8}}>
-                    <input value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder="Nombre" style={{...inputStyle,flex:2,padding:"8px 10px",fontSize:13}} />
-                    <input value={form.pin} onChange={e=>setForm(f=>({...f,pin:e.target.value}))} placeholder="PIN" maxLength={6} style={{...inputStyle,flex:1,padding:"8px 10px",fontSize:13}} />
-                  </div>
-                  <div style={{display:"flex",gap:8,marginBottom:8}}>
-                    {["admin","user"].map(r=>(
-                      <div key={r} onClick={()=>setForm(f=>({...f,role:r}))} style={{flex:1,padding:"8px",borderRadius:8,border:form.role===r?"2px solid #0066ff":"2px solid #ffffff15",background:form.role===r?"#0066ff22":"transparent",textAlign:"center",cursor:"pointer",fontSize:12,color:form.role===r?"#6ab4ff":"#555",fontWeight:700}}>
-                        {r==="admin"?"⚡ Admin":"👁 Viewer"}
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{display:"flex",gap:8}}>
-                    <button onClick={saveU} style={{flex:1,background:"#00d4aa",border:"none",borderRadius:8,padding:"10px",color:"#fff",fontWeight:700,fontSize:13,cursor:"pointer"}}>Guardar</button>
-                    <button onClick={()=>setEditingUser(null)} style={{flex:1,background:"transparent",border:"1px solid #ffffff15",borderRadius:8,padding:"10px",color:"#666",fontSize:13,cursor:"pointer"}}>Cancelar</button>
-                  </div>
-                </div>
-              ):(
-                <div style={{display:"flex",alignItems:"center",gap:10}}>
-                  <Avatar name={u.name} pts={200} size={32} />
-                  <div style={{flex:1}}>
-                    <div style={{fontSize:13,fontWeight:700,color:"#fff"}}>{u.name}</div>
-                    <div style={{fontSize:10,color:"#444"}}>PIN: {"•".repeat(u.pin.length)}</div>
-                  </div>
-                  <RoleBadge role={u.role} />
-                  <button onClick={()=>startEdit(u)} style={{background:"transparent",border:"1px solid #ffffff15",borderRadius:8,padding:"6px 10px",color:"#666",fontSize:11,cursor:"pointer"}}>✏️</button>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
+  // UsersMgmtModal is defined outside App to avoid React hooks error #310
 
-  // ── Read-only banner ────────────────────────────────────────────────────────
-  const ReadOnlyBanner = ()=>!isAdmin?(
-    <div style={{background:"#0066ff15",border:"1px solid #0066ff33",borderRadius:10,padding:"10px 14px",marginBottom:16,display:"flex",alignItems:"center",gap:8}}>
-      <span style={{fontSize:16}}>👁</span>
-      <span style={{fontSize:12,color:"#6ab4ff"}}>Modo visualización — solo los admins pueden hacer cambios</span>
-    </div>
-  ):null;
+  // ReadOnlyBanner defined outside App
 
   // ══════════════════════════════════════════════════════════════════════════════
   // ── SCREENS ──────────────────────────────────────────────────────────────────
@@ -584,7 +595,7 @@ export default function App() {
               <SectionLabel style={{marginBottom:0}}>{players.length} JUGADORES</SectionLabel>
               {isAdmin&&<button onClick={()=>setEditingPlayer({})} style={{background:"#00d4aa",border:"none",borderRadius:10,padding:"8px 16px",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer"}}>+ Agregar</button>}
             </div>
-            <ReadOnlyBanner />
+            <ReadOnlyBanner isAdmin={isAdmin} />
             {ranking.map(p=>{
               const isGoing=attending.has(p.id);
               return (
@@ -660,7 +671,7 @@ export default function App() {
         {matches.length===0?(
           <>
             <SectionLabel>CONFIGURAR PARTIDO</SectionLabel>
-            <ReadOnlyBanner />
+            <ReadOnlyBanner isAdmin={isAdmin} />
 
             {/* Asistencia */}
             <div style={{marginBottom:20}}>
@@ -933,7 +944,7 @@ export default function App() {
       </div>
 
       {editingPlayer!==null&&isAdmin&&<PlayerModal player={editingPlayer} onSave={handleSavePlayer} onDelete={handleDeletePlayer} onClose={()=>setEditingPlayer(null)} />}
-      {showUsersMgmt&&isAdmin&&<UsersMgmtModal />}
+      {showUsersMgmt&&isAdmin&&<UsersMgmtModal users={users} onClose={()=>setShowUsersMgmt(false)} onSave={(updated)=>{ saveUser(updated).catch(console.error); notify("Usuario actualizado ✓"); }} notify={notify} />}
 
       <style>{`* { box-sizing:border-box; } ::-webkit-scrollbar { width:0; } input[type=number]::-webkit-inner-spin-button { -webkit-appearance:none; } input::placeholder { color:#444; }`}</style>
     </div>
