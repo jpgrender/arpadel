@@ -357,39 +357,45 @@ export default function App() {
     saveSession(updates).catch(console.error);
   },[]);
 
-  // ── Guards ──────────────────────────────────────────────────────────────────
-  if (loading) return (
-    <div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
-      <img src={LOGO} alt="ARPadel" style={{height:40,objectFit:"contain"}} />
-      <div style={{color:"#333",fontSize:13}}>Conectando…</div>
-    </div>
-  );
-  if (!currentUser) return <LoginScreen users={users} onLogin={u=>setCurrentUser(u)} />;
-
   // ── Derived data ────────────────────────────────────────────────────────────
-  const ranking = useMemo(()=>
-    [...players].sort((a,b)=>b.pts-a.pts).map((p,i)=>({...p,rank:i+1})),
-    [players]
-  );
-  const attendingPlayers = useMemo(()=>
-    players.filter(p=>attending.has(p.id)).sort((a,b)=>b.pts-a.pts),
-    [players,attending]
-  );
-  const suggestedCourts = Math.floor(attendingPlayers.length/4);
-  const remainder       = attendingPlayers.length%4;
+const ranking = useMemo(() =>
+  [...players].sort((a,b)=>b.pts-a.pts).map((p,i)=>({...p,rank:i+1})),
+  [players]
+);
 
-  const enrichedPairs = useMemo(()=>
-    Object.entries(pairHistory)
-      .map(([key,times])=>{
-        const [idA,idB]=key.split("-").map(Number);
-        const pA=players.find(p=>p.id===idA), pB=players.find(p=>p.id===idB);
-        if(!pA||!pB) return null;
-        return {key,pA,pB,times};
-      })
-      .filter(Boolean)
-      .sort((a,b)=>b.times-a.times),
-    [pairHistory,players]
-  );
+const attendingPlayers = useMemo(() =>
+  players.filter(p=>attending.has(p.id)).sort((a,b)=>b.pts-a.pts),
+  [players,attending]
+);
+
+const suggestedCourts = Math.floor(attendingPlayers.length/4);
+const remainder = attendingPlayers.length % 4;
+
+const enrichedPairs = useMemo(() =>
+  Object.entries(pairHistory)
+    .map(([key,times])=>{
+      const [idA,idB]=key.split("-").map(Number);
+      const pA=players.find(p=>p.id===idA);
+      const pB=players.find(p=>p.id===idB);
+      if(!pA||!pB) return null;
+      return {key,pA,pB,times};
+    })
+    .filter(Boolean)
+    .sort((a,b)=>b.times-a.times),
+  [pairHistory,players]
+);
+
+
+// ── Guards ──────────────────────────────────────────────────────────────────
+if (loading) return (
+  <div style={{minHeight:"100vh",background:"#0d0d1a",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:16}}>
+    <img src={LOGO} alt="ARPadel" style={{height:40,objectFit:"contain"}} />
+    <div style={{color:"#333",fontSize:13}}>Conectando…</div>
+  </div>
+);
+
+if (!currentUser)
+  return <LoginScreen users={users} onLogin={u=>setCurrentUser(u)} />;
 
   // ── Notification ────────────────────────────────────────────────────────────
   function notify(msg,color="#00d4aa"){
