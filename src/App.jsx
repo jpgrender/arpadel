@@ -581,7 +581,7 @@ if (!currentUser)
         )}
 
         <button onClick={()=>setTab("partido")} style={{width:"100%",marginTop:8,background:"linear-gradient(135deg,#00d4aa,#0066ff)",border:"none",borderRadius:14,padding:"16px",color:"#fff",fontWeight:800,fontSize:15,cursor:"pointer"}}>
-          🎾 Armar partido →
+          🎾 {isAdmin ? "🎾 Armar partido →" : "📋 Consultar partidos"}
         </button>
       </div>
     ),
@@ -676,7 +676,9 @@ if (!currentUser)
       <div style={{padding:"0 16px 16px"}}>
         {matches.length===0?(
           <>
-            <SectionLabel>CONFIGURAR PARTIDO</SectionLabel>
+            <SectionLabel>
+				{isAdmin ? "CONFIGURAR PARTIDO" : "PARTIDOS DE HOY"}
+			</SectionLabel>
             <ReadOnlyBanner isAdmin={isAdmin} />
 
             {/* Asistencia */}
@@ -714,7 +716,40 @@ if (!currentUser)
                 </div>
               )}
             </div>
+			{/* Tipo de partido */}
+			<div style={{marginBottom:20}}>
+			  <div style={{fontSize:12,color:"#aaa",marginBottom:10,fontWeight:600}}>
+				TIPO DE PARTIDO
+			  </div>
 
+			  {[
+				{id:"corto", label:"⚡ Partido corto"},
+				{id:"largo", label:"🏆 Partido largo"}
+			  ].map(t=>(
+				<button
+				  key={t.id}
+				  onClick={()=>writeSession({matchType:t.id})}
+				  style={{
+					width:"100%",
+					textAlign:"left",
+					padding:"12px",
+					background:matchType===t.id?"#0066ff22":"#ffffff08",
+					border:matchType===t.id?"2px solid #0066ff":"2px solid #ffffff10",
+					borderRadius:12,
+					cursor:"pointer",
+					marginBottom:8
+				  }}
+				>
+				  <div style={{
+					fontSize:13,
+					fontWeight:700,
+					color:matchType===t.id?"#6ab4ff":"#ccc"
+				  }}>
+					{t.label}
+				  </div>
+				</button>
+			  ))}
+			</div>
             {/* Canchas */}
             {isAdmin&&(
               <>
