@@ -14,7 +14,7 @@ const LOGO = "/logo.jpg";
 
 // ── Level config ──────────────────────────────────────────────────────────────
 const LEVEL_COLORS = {
-  5: { bg:"#ff6b35", label:"PRO", range:[380,999] },
+  5: { bg:"#ff6b35", label:"5",   range:[380,999] },
   4: { bg:"#f7c59f", label:"4",   range:[280,379] },
   3: { bg:"#5bc0eb", label:"3",   range:[200,279] },
   2: { bg:"#9bc53d", label:"2",   range:[120,199] },
