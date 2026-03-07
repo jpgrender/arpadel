@@ -55,7 +55,7 @@ function generateMatches(players, courts, mode, pairHistory) {
     for (let i=0;i<courts&&sorted.length>=4;i++) {
       const group=sorted.splice(0,4);
       const {t1,t2}=bestPairing(group);
-      matches.push({id:i,team1:t1,team2:t2,score1:"",score2:"",sets:[["",""],["",""],["",""]],done:false});
+      matches.push({id:i,team1:t1,team2:t2,score1:"",score2:"",s0a:"",s0b:"",s1a:"",s1b:"",s2a:"",s2b:"",done:false});
     }
   } else {
     const sorted=[...pool];
@@ -63,7 +63,7 @@ function generateMatches(players, courts, mode, pairHistory) {
     for (let i=0;i+3<sorted.length&&ci<courts;i+=4) {
       const group=sorted.slice(i,i+4);
       const {t1,t2}=bestPairing(group);
-      matches.push({id:ci,team1:t1,team2:t2,score1:"",score2:"",sets:[["",""],["",""],["",""]],done:false,category:getLevel(group[1].pts)});
+      matches.push({id:ci,team1:t1,team2:t2,score1:"",score2:"",s0a:"",s0b:"",s1a:"",s1b:"",s2a:"",s2b:"",done:false,category:getLevel(group[1].pts)});
       ci++;
     }
   }
@@ -482,11 +482,8 @@ export default function App() {
   }
   function handleSetChange(matchId,si,team,value){
     if(!isAdmin)return;
-    writeSession({matches:matches.map(m=>{
-      if(m.id!==matchId)return m;
-      const sets=[...(m.sets??[[null,null],[null,null],[null,null]])];
-      const s=[...sets[si]];s[team]=value;sets[si]=s;return {...m,sets};
-    })});
+    const key=`s${si}${team===0?"a":"b"}`;
+    writeSession({matches:matches.map(m=>m.id===matchId?{...m,[key]:value}:m)});
   }
   function handleConfirmMatch(matchId){
     if(!isAdmin)return;
@@ -494,7 +491,10 @@ export default function App() {
     let s1,s2,winners;
     if(matchType==="long"){
       let t1s=0,t2s=0;s1=0;s2=0;
-      for(const set of (match.sets??[])){const a=parseInt(set?.[0]),b=parseInt(set?.[1]);if(isNaN(a)||isNaN(b))continue;if(a>b)t1s++;if(b>a)t2s++;s1+=a;s2+=b;}
+      for(let si=0;si<3;si++){
+        const a=parseInt(match[`s${si}a`]),b=parseInt(match[`s${si}b`]);
+        if(isNaN(a)||isNaN(b))continue;if(a>b)t1s++;if(b>a)t2s++;s1+=a;s2+=b;
+      }
       if(t1s===t2s){notify("Falta completar el tercer set","#ff6b6b");return;}
       winners=t1s>t2s?match.team1:match.team2;
     } else {
@@ -735,9 +735,9 @@ export default function App() {
                       {[0,1,2].map(si=>(
                         <div key={si} style={{display:"flex",gap:8,alignItems:"center",marginBottom:8}}>
                           <span style={{fontSize:11,color:"#555",width:40}}>Set {si+1}</span>
-                          <input type="number" min="0" value={match.sets?.[si]?.[0]??""} onChange={e=>handleSetChange(match.id,si,0,e.target.value)} placeholder="0" style={{flex:1,background:"#ffffff12",border:"1px solid #ffffff20",borderRadius:6,padding:"8px",color:"#fff",fontSize:16,fontWeight:800,textAlign:"center",outline:"none"}} />
+                          <input type="number" min="0" value={match[`s${si}a`]??""} onChange={e=>handleSetChange(match.id,si,0,e.target.value)} placeholder="0" style={{flex:1,background:"#ffffff12",border:"1px solid #ffffff20",borderRadius:6,padding:"8px",color:"#fff",fontSize:16,fontWeight:800,textAlign:"center",outline:"none"}} />
                           <span style={{color:"#2a2a2a",fontWeight:800}}>—</span>
-                          <input type="number" min="0" value={match.sets?.[si]?.[1]??""} onChange={e=>handleSetChange(match.id,si,1,e.target.value)} placeholder="0" style={{flex:1,background:"#ffffff12",border:"1px solid #ffffff20",borderRadius:6,padding:"8px",color:"#fff",fontSize:16,fontWeight:800,textAlign:"center",outline:"none"}} />
+                          <input type="number" min="0" value={match[`s${si}b`]??""} onChange={e=>handleSetChange(match.id,si,1,e.target.value)} placeholder="0" style={{flex:1,background:"#ffffff12",border:"1px solid #ffffff20",borderRadius:6,padding:"8px",color:"#fff",fontSize:16,fontWeight:800,textAlign:"center",outline:"none"}} />
                         </div>
                       ))}
                       <button onClick={()=>handleConfirmMatch(match.id)} style={{width:"100%",background:"#00d4aa",border:"none",borderRadius:8,padding:"10px",color:"#fff",fontWeight:800,fontSize:13,cursor:"pointer",marginTop:4}}>✓ Confirmar</button>
