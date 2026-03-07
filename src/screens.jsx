@@ -1,4 +1,35 @@
+import { useState } from "react";
 import { Avatar, LevelBadge, SectionLabel, ReadOnlyBanner, getLevelColor, getLevelLabel } from "./components";
+
+// ── HistorialSection ─────────────────────────────────────────────────────────
+function HistorialSection({ matchHistory }) {
+  const [expanded, setExpanded] = useState(false);
+  const visible = expanded ? matchHistory : matchHistory.slice(0, 3);
+  const label = expanded ? "Ver menos ▲" : "Ver historial completo (" + matchHistory.length + ") ▼";
+  return (
+    <>
+      <SectionLabel>ÚLTIMOS RESULTADOS</SectionLabel>
+      {visible.map((h, i) => (
+        <div key={i} style={{ background: "#ffffff08", borderRadius: 10, padding: "12px 14px", marginBottom: 8, border: "1px solid #ffffff10" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ fontSize: 12, color: "#ccc", flex: 1 }}>{h.team1}</div>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#00d4aa", padding: "0 8px" }}>{h.score}</div>
+            <div style={{ fontSize: 12, color: "#ccc", flex: 1, textAlign: "right" }}>{h.team2}</div>
+          </div>
+          <div style={{ fontSize: 10, color: "#555", marginTop: 4 }}>Ganó: <span style={{ color: "#00d4aa" }}>{h.winner}</span> · {h.date}</div>
+        </div>
+      ))}
+      {matchHistory.length > 3 && (
+        <button onClick={() => setExpanded(v => !v)}
+          style={{ width: "100%", background: "transparent", border: "1px solid #ffffff15", borderRadius: 10, padding: "10px", color: "#6ab4ff", fontSize: 12, fontWeight: 700, cursor: "pointer", marginBottom: 8 }}>
+          {label}
+        </button>
+      )}
+    </>
+  );
+}
+
+
 
 export function getScreens({
   // data
@@ -52,19 +83,7 @@ export function getScreens({
       ))}
 
       {matchHistory.length > 0 && (
-        <>
-          <SectionLabel>ÚLTIMOS RESULTADOS</SectionLabel>
-          {matchHistory.slice(0, 3).map((h, i) => (
-            <div key={i} style={{ background: "#ffffff08", borderRadius: 10, padding: "12px 14px", marginBottom: 8, border: "1px solid #ffffff10" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <div style={{ fontSize: 12, color: "#ccc", flex: 1 }}>{h.team1}</div>
-                <div style={{ fontSize: 14, fontWeight: 800, color: "#00d4aa", padding: "0 8px" }}>{h.score}</div>
-                <div style={{ fontSize: 12, color: "#ccc", flex: 1, textAlign: "right" }}>{h.team2}</div>
-              </div>
-              <div style={{ fontSize: 10, color: "#555", marginTop: 4 }}>Ganó: <span style={{ color: "#00d4aa" }}>{h.winner}</span> · {h.date}</div>
-            </div>
-          ))}
-        </>
+        <HistorialSection matchHistory={matchHistory} />
       )}
 
       <button onClick={() => setTab("partido")}

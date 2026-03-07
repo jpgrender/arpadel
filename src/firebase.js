@@ -104,6 +104,9 @@ export async function removePlayer(id) {
 export async function saveUser(user) {
   await setDoc(doc(db, "users", String(user.id)), user);
 }
+export async function removeUser(id) {
+  await deleteDoc(doc(db, "users", String(id)));
+}
 export async function saveSession(data) {
   await setDoc(doc(db, "config", "session"), data, { merge: true });
 }

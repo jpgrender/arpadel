@@ -177,12 +177,24 @@ export function PlayerModal({ player, onSave, onDelete, onClose }) {
 }
 
 // ── UsersMgmtModal ───────────────────────────────────────────────────────────
-export function UsersMgmtModal({ users, onClose, onSave }) {
+// Muestra la lista de PLAYERS y cruza con USERS para PIN y rol.
+// Si un jugador no tiene entrada en users, se trata como role "user" y PIN "0000".
+export function UsersMgmtModal({ players, users, onClose, onSave }) {
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState({});
 
-  function startEdit(u) { setEditingId(u.id); setForm({ name: u.name, pin: u.pin, role: u.role }); }
-  function save() { const u = users.find(x => x.id === editingId); onSave({ ...u, ...form }); setEditingId(null); }
+  function startEdit(p) {
+    const u = users.find(x => x.id === p.id);
+    setEditingId(p.id);
+    setForm({ name: p.name, pin: u?.pin ?? "0000", role: u?.role ?? "user" });
+  }
+  function save() {
+    const p = players.find(x => x.id === editingId);
+    onSave({ id: editingId, name: p.name, pin: form.pin, role: form.role });
+    setEditingId(null);
+  }
+
+  const sorted = [...players].sort((a, b) => a.name.localeCompare(b.name));
 
   return (
     <div
@@ -197,43 +209,47 @@ export function UsersMgmtModal({ users, onClose, onSave }) {
         <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", marginBottom: 4 }}>⚙️ Gestión de usuarios</div>
         <div style={{ fontSize: 12, color: "#555", marginBottom: 20 }}>Cambiá roles y PINs.</div>
 
-        {users.map(u => (
-          <div key={u.id} style={{ background: "#ffffff07", borderRadius: 12, padding: "12px 14px", marginBottom: 8, border: "1px solid #ffffff0d" }}>
-            {editingId === u.id ? (
-              <div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Nombre"
-                    style={{ ...inputStyle, flex: 2, padding: "8px 10px", fontSize: 13 }} />
-                  <input value={form.pin} onChange={e => setForm(f => ({ ...f, pin: e.target.value }))} placeholder="PIN" maxLength={6}
-                    style={{ ...inputStyle, flex: 1, padding: "8px 10px", fontSize: 13 }} />
+        {sorted.map(p => {
+          const u = users.find(x => x.id === p.id);
+          const role = u?.role ?? "user";
+          const pin = u?.pin ?? "0000";
+          return (
+            <div key={p.id} style={{ background: "#ffffff07", borderRadius: 12, padding: "12px 14px", marginBottom: 8, border: "1px solid #ffffff0d" }}>
+              {editingId === p.id ? (
+                <div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#aaa", marginBottom: 8 }}>{p.name}</div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    <input value={form.pin} onChange={e => setForm(f => ({ ...f, pin: e.target.value }))} placeholder="PIN" maxLength={6}
+                      style={{ ...inputStyle, flex: 1, padding: "8px 10px", fontSize: 13 }} />
+                  </div>
+                  <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+                    {["admin", "user"].map(r => (
+                      <div key={r} onClick={() => setForm(f => ({ ...f, role: r }))}
+                        style={{ flex: 1, padding: "8px", borderRadius: 8, border: form.role === r ? "2px solid #0066ff" : "2px solid #ffffff15", background: form.role === r ? "#0066ff22" : "transparent", textAlign: "center", cursor: "pointer", fontSize: 12, color: form.role === r ? "#6ab4ff" : "#555", fontWeight: 700 }}>
+                        {r === "admin" ? "⚡ Admin" : "👁 Viewer"}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button onClick={save} style={{ flex: 1, background: "#00d4aa", border: "none", borderRadius: 8, padding: "10px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Guardar</button>
+                    <button onClick={() => setEditingId(null)} style={{ flex: 1, background: "transparent", border: "1px solid #ffffff15", borderRadius: 8, padding: "10px", color: "#666", fontSize: 13, cursor: "pointer" }}>Cancelar</button>
+                  </div>
                 </div>
-                <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-                  {["admin", "user"].map(r => (
-                    <div key={r} onClick={() => setForm(f => ({ ...f, role: r }))}
-                      style={{ flex: 1, padding: "8px", borderRadius: 8, border: form.role === r ? "2px solid #0066ff" : "2px solid #ffffff15", background: form.role === r ? "#0066ff22" : "transparent", textAlign: "center", cursor: "pointer", fontSize: 12, color: form.role === r ? "#6ab4ff" : "#555", fontWeight: 700 }}>
-                      {r === "admin" ? "⚡ Admin" : "👁 Viewer"}
-                    </div>
-                  ))}
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <Avatar name={p.name} pts={200} size={32} />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{p.name}</div>
+                    <div style={{ fontSize: 10, color: "#444" }}>PIN: {"•".repeat(pin.length)}</div>
+                  </div>
+                  <RoleBadge role={role} />
+                  <button onClick={() => startEdit(p)}
+                    style={{ background: "transparent", border: "1px solid #ffffff15", borderRadius: 8, padding: "6px 10px", color: "#666", fontSize: 11, cursor: "pointer" }}>✏️</button>
                 </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button onClick={save} style={{ flex: 1, background: "#00d4aa", border: "none", borderRadius: 8, padding: "10px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>Guardar</button>
-                  <button onClick={() => setEditingId(null)} style={{ flex: 1, background: "transparent", border: "1px solid #ffffff15", borderRadius: 8, padding: "10px", color: "#666", fontSize: 13, cursor: "pointer" }}>Cancelar</button>
-                </div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <Avatar name={u.name} pts={200} size={32} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{u.name}</div>
-                  <div style={{ fontSize: 10, color: "#444" }}>PIN: {"•".repeat(u.pin?.length ?? 4)}</div>
-                </div>
-                <RoleBadge role={u.role} />
-                <button onClick={() => startEdit(u)}
-                  style={{ background: "transparent", border: "1px solid #ffffff15", borderRadius: 8, padding: "6px 10px", color: "#666", fontSize: 11, cursor: "pointer" }}>✏️</button>
-              </div>
-            )}
-          </div>
-        ))}
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
@@ -331,8 +347,81 @@ export function QuickMatchModal({ players, onSave, onClose }) {
   );
 }
 
+
+// ── UserPinModal ─────────────────────────────────────────────────────────────
+export function UserPinModal({ user, onClose, onSave }) {
+  const [currentPin, setCurrentPin] = useState("");
+  const [newPin,     setNewPin]     = useState("");
+  const [confirmPin, setConfirmPin] = useState("");
+  const [error,      setError]      = useState("");
+  const [showCurr,   setShowCurr]   = useState(false);
+  const [showNew,    setShowNew]    = useState(false);
+
+  function handleSave() {
+    if (currentPin !== user.pin)       { setError("PIN actual incorrecto"); return; }
+    if (newPin.length < 4)             { setError("El PIN debe tener al menos 4 dígitos"); return; }
+    if (newPin !== confirmPin)         { setError("Los PINs nuevos no coinciden"); return; }
+    onSave({ ...user, pin: newPin });
+    onClose();
+  }
+
+  const inputStyle = { width: "100%", background: "#0d0d1a", border: "1px solid #ffffff20", borderRadius: 10, padding: "12px 14px", color: "#fff", fontSize: 15, outline: "none", letterSpacing: 4 };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#000000cc", zIndex: 200, display: "flex", alignItems: "flex-end", justifyContent: "center" }}>
+      <div style={{ background: "#13131f", borderRadius: "20px 20px 0 0", padding: "24px 20px 40px", width: "100%", maxWidth: 420 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <div style={{ fontSize: 16, fontWeight: 800 }}>🔐 Cambiar mi PIN</div>
+          <button onClick={onClose} style={{ background: "transparent", border: "none", color: "#555", fontSize: 20, cursor: "pointer" }}>✕</button>
+        </div>
+        <div style={{ fontSize: 12, color: "#555", marginBottom: 24 }}>Cambiá tu PIN de acceso</div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: "#666", marginBottom: 6, fontWeight: 600 }}>PIN ACTUAL</div>
+          <div style={{ position: "relative" }}>
+            <input type={showCurr ? "text" : "password"} inputMode="numeric" maxLength={6}
+              value={currentPin} onChange={e => { setCurrentPin(e.target.value); setError(""); }}
+              placeholder="••••" style={inputStyle} />
+            <button onClick={() => setShowCurr(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", color: "#555", cursor: "pointer", fontSize: 14 }}>
+              {showCurr ? "🙈" : "👁"}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ fontSize: 11, color: "#666", marginBottom: 6, fontWeight: 600 }}>PIN NUEVO</div>
+          <div style={{ position: "relative" }}>
+            <input type={showNew ? "text" : "password"} inputMode="numeric" maxLength={6}
+              value={newPin} onChange={e => { setNewPin(e.target.value); setError(""); }}
+              placeholder="••••" style={inputStyle} />
+            <button onClick={() => setShowNew(v => !v)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", background: "transparent", border: "none", color: "#555", cursor: "pointer", fontSize: 14 }}>
+              {showNew ? "🙈" : "👁"}
+            </button>
+          </div>
+        </div>
+
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontSize: 11, color: "#666", marginBottom: 6, fontWeight: 600 }}>CONFIRMAR PIN NUEVO</div>
+          <input type="password" inputMode="numeric" maxLength={6}
+            value={confirmPin} onChange={e => { setConfirmPin(e.target.value); setError(""); }}
+            placeholder="••••" style={inputStyle} />
+        </div>
+
+        {error && <div style={{ color: "#ff6b6b", fontSize: 12, marginBottom: 14, textAlign: "center" }}>{error}</div>}
+
+        <button onClick={handleSave}
+          style={{ width: "100%", background: "linear-gradient(135deg,#00d4aa,#0066ff)", border: "none", borderRadius: 12, padding: "14px", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer" }}>
+          Guardar PIN
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── LoginScreen ──────────────────────────────────────────────────────────────
-export function LoginScreen({ users, onLogin }) {
+// Muestra la lista de PLAYERS y valida PIN contra USERS por ID.
+// Si un jugador no tiene user todavía, el PIN por defecto es "0000".
+export function LoginScreen({ players, users, onLogin }) {
   const [selected, setSelected] = useState(null);
   const [pin, setPin] = useState("");
   const [error, setError] = useState("");
@@ -340,10 +429,13 @@ export function LoginScreen({ users, onLogin }) {
 
   function handleLogin() {
     if (!selected) { setError("Seleccioná tu nombre"); return; }
-    const user = users.find(u => u.id === selected);
-    if (!user) { setError("Usuario no encontrado"); return; }
-    if (user.pin !== pin) { setError("PIN incorrecto"); setPin(""); return; }
-    onLogin(user);
+    const player = players.find(p => p.id === selected);
+    if (!player) { setError("Jugador no encontrado"); return; }
+    const userRecord = users.find(u => u.id === selected);
+    const expectedPin = userRecord?.pin ?? "0000";
+    const role = userRecord?.role ?? "user";
+    if (expectedPin !== pin) { setError("PIN incorrecto"); setPin(""); return; }
+    onLogin({ id: player.id, name: player.name, pin: expectedPin, role });
   }
 
   return (
@@ -356,10 +448,10 @@ export function LoginScreen({ users, onLogin }) {
         <div style={{ marginBottom: 16 }}>
           <div style={{ fontSize: 11, color: "#888", fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>¿QUIÉN SOS?</div>
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-            {[...users].sort((a, b) => a.name.localeCompare(b.name)).map(u => (
-              <div key={u.id} onClick={() => { setSelected(u.id); setPin(""); setError(""); }}
-                style={{ padding: "7px 14px", borderRadius: 20, cursor: "pointer", fontSize: 13, fontWeight: 600, background: selected === u.id ? "#00d4aa" : "#ffffff0d", color: selected === u.id ? "#fff" : "#888", border: selected === u.id ? "2px solid #00d4aa" : "2px solid transparent" }}>
-                {u.name}
+            {[...players].sort((a, b) => a.name.localeCompare(b.name)).map(p => (
+              <div key={p.id} onClick={() => { setSelected(p.id); setPin(""); setError(""); }}
+                style={{ padding: "7px 14px", borderRadius: 20, cursor: "pointer", fontSize: 13, fontWeight: 600, background: selected === p.id ? "#00d4aa" : "#ffffff0d", color: selected === p.id ? "#fff" : "#888", border: selected === p.id ? "2px solid #00d4aa" : "2px solid transparent" }}>
+                {p.name}
               </div>
             ))}
           </div>

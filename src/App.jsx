@@ -2,11 +2,11 @@ import { useState, useMemo, useEffect, useCallback } from "react";
 import { collection, doc, onSnapshot, query, orderBy, limit } from "firebase/firestore";
 import {
   db, seedIfEmpty,
-  savePlayer, removePlayer, saveUser,
+  savePlayer, removePlayer, saveUser, removeUser,
   saveSession, savePairHistory, addMatchHistory,
 } from "./firebase";
 import {
-  LoginScreen, PlayerModal, UsersMgmtModal, QuickMatchModal,
+  LoginScreen, PlayerModal, UsersMgmtModal, QuickMatchModal, UserPinModal,
   getLevel, pairKey,
 } from "./components";
 import { getScreens } from "./screens";
@@ -92,6 +92,7 @@ export default function App() {
   const [pairSearch,     setPairSearch]     = useState("");
   const [showUsersMgmt,  setShowUsersMgmt]  = useState(false);
   const [showQuickMatch, setShowQuickMatch] = useState(false);
+  const [showUserPin,    setShowUserPin]    = useState(false);
 
   // ── Derived session values ─────────────────────────────────────────────────
   const attending    = useMemo(() => new Set(session?.attending ?? []), [session]);
@@ -197,7 +198,7 @@ export default function App() {
       <div style={{ color: "#333", fontSize: 13 }}>Conectando…</div>
     </div>
   );
-  if (!currentUser) return <LoginScreen users={users} onLogin={u => setCurrentUser(u)} />;
+  if (!currentUser) return <LoginScreen players={players} users={users} onLogin={u => setCurrentUser(u)} />;
 
   // ── Helpers ────────────────────────────────────────────────────────────────
   function notify(msg, color = "#00d4aa") {
@@ -223,12 +224,19 @@ export default function App() {
   function handleSavePlayer(updated) {
     if (!isAdmin) return;
     if (!updated.id) {
+      // Nuevo jugador → crear player Y su usuario con PIN 0000
       const newId = players.length ? Math.max(...players.map(p => p.id)) + 1 : 1;
       const p = { ...updated, id: newId };
       savePlayer(p).catch(console.error);
+      saveUser({ id: newId, name: p.name, pin: "0000", role: "user" }).catch(console.error);
       notify(`${p.name} agregado 👋`);
     } else {
       savePlayer(updated).catch(console.error);
+      // Si cambió el nombre, actualizar también en users
+      const existingUser = users.find(u => u.id === updated.id);
+      if (existingUser && existingUser.name !== updated.name) {
+        saveUser({ ...existingUser, name: updated.name }).catch(console.error);
+      }
       notify(`${updated.name} actualizado ✓`);
     }
     setEditingPlayer(null);
@@ -238,6 +246,7 @@ export default function App() {
     if (!isAdmin) return;
     const p = players.find(x => x.id === id);
     removePlayer(id).catch(console.error);
+    removeUser(id).catch(console.error);   // eliminar también de users
     const next = new Set(attending); next.delete(id);
     writeSession({ attending: [...next] });
     setEditingPlayer(null);
@@ -452,7 +461,7 @@ export default function App() {
               </div>
             )}
             <div
-              onClick={() => isAdmin && setShowUsersMgmt(true)}
+              onClick={() => isAdmin ? setShowUsersMgmt(true) : setShowUserPin(true)}
               style={{ display: "flex", alignItems: "center", gap: 6, background: "#ffffff0d", border: "1px solid #ffffff15", borderRadius: 20, padding: "4px 10px", cursor: isAdmin ? "pointer" : "default" }}>
               <div style={{ width: 18, height: 18, borderRadius: "50%", background: isAdmin ? "#0066ff" : "#ffffff20", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 800, color: "#fff" }}>
                 {currentUser.name[0]}
@@ -497,10 +506,13 @@ export default function App() {
         <PlayerModal player={editingPlayer} onSave={handleSavePlayer} onDelete={handleDeletePlayer} onClose={() => setEditingPlayer(null)} />
       )}
       {showUsersMgmt && isAdmin && (
-        <UsersMgmtModal users={users} onClose={() => setShowUsersMgmt(false)} onSave={u => { saveUser(u).catch(console.error); notify("Usuario actualizado ✓"); }} />
+        <UsersMgmtModal players={players} users={users} onClose={() => setShowUsersMgmt(false)} onSave={u => { saveUser(u).catch(console.error); notify("Usuario actualizado ✓"); }} />
       )}
       {showQuickMatch && isAdmin && (
         <QuickMatchModal players={players} onSave={handleQuickMatchSave} onClose={() => setShowQuickMatch(false)} />
+      )}
+      {showUserPin && !isAdmin && (
+        <UserPinModal user={currentUser} onClose={() => setShowUserPin(false)} onSave={u => { saveUser(u).catch(console.error); setCurrentUser(u); notify("PIN actualizado ✓"); }} />
       )}
     </div>
   );
