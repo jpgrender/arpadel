@@ -639,152 +639,176 @@ export function getScreens({
 // ── PERFIL SCREEN ─────────────────────────────────────────────────────────────
 // ── CropModal ────────────────────────────────────────────────────────────────
 function CropModal({ imageSrc, onCrop, onCancel }) {
-  const canvasRef  = useRef(null);
-  const imgRef     = useRef(new Image());
-  const dragRef    = useRef({ active: false, lastX: 0, lastY: 0 });
+  const canvasRef = useRef(null);
+  const imgRef    = useRef(new Image());
+  const stateRef  = useRef({ dragging: false, lastX: 0, lastY: 0, ox: 0, oy: 0, scale: 1 });
   const SIZE = 280;
-  const [offset,    setOffset]    = useState({ x: 0, y: 0 });
-  const [scale,     setScale]     = useState(1);
-  const [initScale, setInitScale] = useState(1);
 
   useEffect(() => {
     const img = imgRef.current;
     img.onload = () => {
       const s = Math.max(SIZE / img.width, SIZE / img.height);
-      setScale(s); setInitScale(s);
-      setOffset({ x: (SIZE - img.width * s) / 2, y: (SIZE - img.height * s) / 2 });
+      stateRef.current.scale = s;
+      stateRef.current.ox = (SIZE - img.width * s) / 2;
+      stateRef.current.oy = (SIZE - img.height * s) / 2;
+      draw();
     };
     img.src = imageSrc;
   }, [imageSrc]);
 
-  useEffect(() => {
+  function draw() {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const { ox, oy, scale } = stateRef.current;
+    const ctx = canvas.getContext('2d');
     const img = imgRef.current;
     ctx.clearRect(0, 0, SIZE, SIZE);
     ctx.save();
     ctx.beginPath();
     ctx.arc(SIZE/2, SIZE/2, SIZE/2, 0, Math.PI*2);
     ctx.clip();
-    ctx.drawImage(img, offset.x, offset.y, img.width * scale, img.height * scale);
+    ctx.drawImage(img, ox, oy, img.width * scale, img.height * scale);
     ctx.restore();
     ctx.save();
-    ctx.fillStyle = "rgba(0,0,0,0.55)";
+    ctx.fillStyle = 'rgba(0,0,0,0.5)';
     ctx.beginPath();
     ctx.rect(0, 0, SIZE, SIZE);
     ctx.arc(SIZE/2, SIZE/2, SIZE/2, 0, Math.PI*2, true);
     ctx.fill();
     ctx.restore();
-  }, [offset, scale]);
+    // Update zoom display
+    const pct = Math.round((scale / stateRef.current.initScale || 1) * 100);
+    const el = document.getElementById('crop-zoom-pct');
+    if (el) el.textContent = pct + '%';
+  }
 
-  // Attach touch/mouse listeners directly so we can use passive:false
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    function getXY(e) {
+    function pos(e) {
       const r = canvas.getBoundingClientRect();
-      const src = e.touches ? e.touches[0] : e;
-      return { x: src.clientX - r.left, y: src.clientY - r.top };
+      const t = e.touches ? e.touches[0] : e;
+      return { x: t.clientX - r.left, y: t.clientY - r.top };
     }
-    function onDown(e) {
+    function onStart(e) {
       e.preventDefault();
-      const p = getXY(e);
-      dragRef.current = { active: true, lastX: p.x, lastY: p.y };
+      const p = pos(e);
+      stateRef.current.dragging = true;
+      stateRef.current.lastX = p.x;
+      stateRef.current.lastY = p.y;
     }
     function onMove(e) {
-      if (!dragRef.current.active) return;
+      if (!stateRef.current.dragging) return;
       e.preventDefault();
-      const p = getXY(e);
-      const dx = p.x - dragRef.current.lastX;
-      const dy = p.y - dragRef.current.lastY;
-      dragRef.current.lastX = p.x;
-      dragRef.current.lastY = p.y;
-      setOffset(o => ({ x: o.x + dx, y: o.y + dy }));
+      const p = pos(e);
+      stateRef.current.ox += p.x - stateRef.current.lastX;
+      stateRef.current.oy += p.y - stateRef.current.lastY;
+      stateRef.current.lastX = p.x;
+      stateRef.current.lastY = p.y;
+      draw();
     }
-    function onUp() { dragRef.current.active = false; }
-    function onWheel(e) {
-      e.preventDefault();
-      setScale(s => Math.min(5, Math.max(initScale * 0.4, s - e.deltaY * 0.001)));
-    }
+    function onEnd(e) { stateRef.current.dragging = false; }
 
-    canvas.addEventListener('mousedown',  onDown,  { passive: false });
-    canvas.addEventListener('mousemove',  onMove,  { passive: false });
-    canvas.addEventListener('mouseup',    onUp);
-    canvas.addEventListener('mouseleave', onUp);
-    canvas.addEventListener('touchstart', onDown,  { passive: false });
-    canvas.addEventListener('touchmove',  onMove,  { passive: false });
-    canvas.addEventListener('touchend',   onUp);
-    canvas.addEventListener('touchcancel',onUp);
-    canvas.addEventListener('wheel',      onWheel, { passive: false });
-
+    canvas.addEventListener('mousedown',   onStart, { passive: false });
+    canvas.addEventListener('mousemove',   onMove,  { passive: false });
+    canvas.addEventListener('mouseup',     onEnd);
+    canvas.addEventListener('mouseleave',  onEnd);
+    canvas.addEventListener('touchstart',  onStart, { passive: false });
+    canvas.addEventListener('touchmove',   onMove,  { passive: false });
+    canvas.addEventListener('touchend',    onEnd);
+    canvas.addEventListener('touchcancel', onEnd);
     return () => {
-      canvas.removeEventListener('mousedown',  onDown);
-      canvas.removeEventListener('mousemove',  onMove);
-      canvas.removeEventListener('mouseup',    onUp);
-      canvas.removeEventListener('mouseleave', onUp);
-      canvas.removeEventListener('touchstart', onDown);
-      canvas.removeEventListener('touchmove',  onMove);
-      canvas.removeEventListener('touchend',   onUp);
-      canvas.removeEventListener('touchcancel',onUp);
-      canvas.removeEventListener('wheel',      onWheel);
+      canvas.removeEventListener('mousedown',   onStart);
+      canvas.removeEventListener('mousemove',   onMove);
+      canvas.removeEventListener('mouseup',     onEnd);
+      canvas.removeEventListener('mouseleave',  onEnd);
+      canvas.removeEventListener('touchstart',  onStart);
+      canvas.removeEventListener('touchmove',   onMove);
+      canvas.removeEventListener('touchend',    onEnd);
+      canvas.removeEventListener('touchcancel', onEnd);
     };
-  }, [initScale]);
+  }, []);
+
+  function zoom(delta) {
+    const s = stateRef.current;
+    const minS = (s.initScale || 1) * 0.4;
+    const newScale = Math.min(5, Math.max(minS, s.scale + delta));
+    // Zoom towards center
+    const cx = SIZE / 2, cy = SIZE / 2;
+    s.ox = cx - (cx - s.ox) * (newScale / s.scale);
+    s.oy = cy - (cy - s.oy) * (newScale / s.scale);
+    s.scale = newScale;
+    draw();
+  }
+
+  function resetZoom() {
+    const s = stateRef.current;
+    const init = s.initScale || 1;
+    s.scale = init;
+    s.ox = (SIZE - imgRef.current.width * init) / 2;
+    s.oy = (SIZE - imgRef.current.height * init) / 2;
+    draw();
+  }
+
+  // Store initScale once image loads
+  useEffect(() => {
+    const img = imgRef.current;
+    const orig = img.onload;
+    img.onload = () => {
+      const s = Math.max(SIZE / img.width, SIZE / img.height);
+      stateRef.current.initScale = s;
+      if (orig) orig();
+    };
+  }, []);
+
   function handleCrop() {
-    const canvas = document.createElement("canvas");
+    const { ox, oy, scale } = stateRef.current;
+    const canvas = document.createElement('canvas');
     canvas.width = 300; canvas.height = 300;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext('2d');
     const img = imgRef.current;
     const f = 300 / SIZE;
     ctx.save();
     ctx.beginPath();
     ctx.arc(150, 150, 150, 0, Math.PI*2);
     ctx.clip();
-    ctx.drawImage(img, offset.x * f, offset.y * f, img.width * scale * f, img.height * scale * f);
+    ctx.drawImage(img, ox * f, oy * f, img.width * scale * f, img.height * scale * f);
     ctx.restore();
-    onCrop(canvas.toDataURL("image/jpeg", 0.85));
-  }
-  function resetZoom() {
-    const s = initScale;
-    setScale(s);
-    setOffset({ x: (SIZE - imgRef.current.width * s) / 2, y: (SIZE - imgRef.current.height * s) / 2 });
+    onCrop(canvas.toDataURL('image/jpeg', 0.85));
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#000000ee", zIndex: 300, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 20 }}>
-      <div style={{ background: "#13131f", borderRadius: 20, padding: 20, width: "100%", maxWidth: 360 }}>
-        <div style={{ fontSize: 15, fontWeight: 800, color: "#fff", marginBottom: 4, textAlign: "center" }}>Encuadrá tu foto</div>
-        <div style={{ fontSize: 11, color: "#aaa", textAlign: "center", marginBottom: 16 }}>Arrastrá para mover · Slider para zoom</div>
-        <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+    <div style={{ position: 'fixed', inset: 0, background: '#000000ee', zIndex: 300, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
+      <div style={{ background: '#13131f', borderRadius: 20, padding: 20, width: '100%', maxWidth: 360 }}>
+        <div style={{ fontSize: 15, fontWeight: 800, color: '#fff', marginBottom: 4, textAlign: 'center' }}>Encuadrá tu foto</div>
+        <div style={{ fontSize: 11, color: '#aaa', textAlign: 'center', marginBottom: 16 }}>Arrastrá la imagen para mover</div>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
           <canvas ref={canvasRef} width={SIZE} height={SIZE}
-            style={{ borderRadius: "50%", cursor: "grab", touchAction: "none", userSelect: "none" }}
+            style={{ borderRadius: '50%', cursor: 'grab', touchAction: 'none', userSelect: 'none', display: 'block' }}
           />
         </div>
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <button
-              onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setScale(s => Math.max(initScale * 0.4, parseFloat((s - 0.05).toFixed(2))));  }}
-              style={{ width: 44, height: 44, borderRadius: 10, background: "#ffffff10", border: "1px solid #ffffff20", color: "#fff", fontSize: 22, fontWeight: 900, cursor: "pointer", flexShrink: 0, touchAction: "none" }}>−</button>
-            <div style={{ flex: 1, textAlign: "center" }}>
-              <div style={{ fontSize: 12, color: "#00d4aa", fontWeight: 700 }}>{Math.round((scale / initScale) * 100)}%</div>
-              <div style={{ fontSize: 10, color: "#555" }}>zoom</div>
-            </div>
-            <button
-              onPointerDown={e => { e.preventDefault(); e.stopPropagation(); setScale(s => Math.min(5, parseFloat((s + 0.05).toFixed(2)))); }}
-              style={{ width: 44, height: 44, borderRadius: 10, background: "#ffffff10", border: "1px solid #ffffff20", color: "#fff", fontSize: 22, fontWeight: 900, cursor: "pointer", flexShrink: 0, touchAction: "none" }}>+</button>
-            <button onClick={resetZoom}
-              style={{ width: 44, height: 44, borderRadius: 10, background: "#6ab4ff15", border: "1px solid #6ab4ff33", color: "#6ab4ff", fontSize: 13, fontWeight: 700, cursor: "pointer", flexShrink: 0 }}>↺</button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+          <button onPointerDown={e => { e.preventDefault(); zoom(-0.08); }}
+            style={{ width: 48, height: 48, borderRadius: 10, background: '#ffffff10', border: '1px solid #ffffff20', color: '#fff', fontSize: 24, fontWeight: 900, cursor: 'pointer', touchAction: 'none' }}>−</button>
+          <div style={{ flex: 1, textAlign: 'center' }}>
+            <div id="crop-zoom-pct" style={{ fontSize: 14, color: '#00d4aa', fontWeight: 700 }}>100%</div>
+            <div style={{ fontSize: 10, color: '#555' }}>zoom</div>
           </div>
+          <button onPointerDown={e => { e.preventDefault(); zoom(+0.08); }}
+            style={{ width: 48, height: 48, borderRadius: 10, background: '#ffffff10', border: '1px solid #ffffff20', color: '#fff', fontSize: 24, fontWeight: 900, cursor: 'pointer', touchAction: 'none' }}>+</button>
+          <button onPointerDown={e => { e.preventDefault(); resetZoom(); }}
+            style={{ width: 48, height: 48, borderRadius: 10, background: '#6ab4ff15', border: '1px solid #6ab4ff33', color: '#6ab4ff', fontSize: 13, fontWeight: 700, cursor: 'pointer', touchAction: 'none' }}>↺</button>
         </div>
-        <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onCancel} style={{ flex: 1, background: "transparent", border: "1px solid #ffffff20", borderRadius: 12, padding: 12, color: "#aaa", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
-          <button onClick={handleCrop} style={{ flex: 2, background: "linear-gradient(135deg,#00d4aa,#0066ff)", border: "none", borderRadius: 12, padding: 12, color: "#fff", fontWeight: 800, cursor: "pointer" }}>✓ Usar esta foto</button>
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onCancel} style={{ flex: 1, background: 'transparent', border: '1px solid #ffffff20', borderRadius: 12, padding: 12, color: '#aaa', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
+          <button onClick={handleCrop} style={{ flex: 2, background: 'linear-gradient(135deg,#00d4aa,#0066ff)', border: 'none', borderRadius: 12, padding: 12, color: '#fff', fontWeight: 800, cursor: 'pointer' }}>✓ Usar esta foto</button>
         </div>
       </div>
     </div>
   );
 }
+
 
 export function ProfileScreen({ currentUser, players, attending, profile, onToggleAttend, onSaveProfile, onUploadPhoto }) {
   const player = players.find(p => p.id === currentUser.id);
