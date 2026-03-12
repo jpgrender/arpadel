@@ -340,8 +340,9 @@ export default function App() {
     const match = matches.find(m => m.id === matchId);
     if (!match) return;
     let s1, s2, winners, losers;
+    const mType = match.matchType || matchType;
 
-    if (matchType === "long") {
+    if (mType === "long") {
       let t1s = 0, t2s = 0; s1 = 0; s2 = 0;
       for (let si = 0; si < 3; si++) {
         const a = parseInt(match[`s${si}a`]), b = parseInt(match[`s${si}b`]);
@@ -393,13 +394,16 @@ export default function App() {
     }
 
     writeSession({ matches: newMatches, rotations: newRotations });
-    addMatchHistory({
+    const histEntry = {
       date: new Date().toLocaleDateString("es-AR"),
       team1: match.team1.map(x => x.name).join(" & "),
       team2: match.team2.map(x => x.name).join(" & "),
       score: `${s1} - ${s2}`,
       winner: winners.map(x => x.name).join(" & "),
-    }).catch(console.error);
+      type: mType,
+    };
+    addMatchHistory(histEntry).catch(console.error);
+    if (match.tournamentId) addTournamentMatch(match.tournamentId, histEntry).catch(console.error);
     notify("¡Resultado guardado! 🎾");
   }
 
@@ -438,28 +442,22 @@ export default function App() {
     }
   }
 
-  function handleFreeMatchSave({ team1, team2, score1, score2, tournamentId }) {
+  function handleFreeMatchSave({ team1, team2, matchType, tournamentId }) {
     if (!isSuperuser) return;
-    const s1 = parseInt(score1), s2 = parseInt(score2);
-    if (isNaN(s1) || isNaN(s2)) { notify("Resultado inválido", "#ff6b6b"); return; }
-    if (s1 === s2) { notify("No puede terminar empatado", "#ff6b6b"); return; }
-    const winners = s1 > s2 ? team1 : team2;
-    for (const p of [...team1, ...team2]) {
-      const isWin = winners.some(x => x.id === p.id);
-      const games = isWin ? Math.max(s1, s2) : Math.min(s1, s2);
-      savePlayer({ ...p, pts: p.pts + games * 5 + (isWin ? 10 : 0), wins: isWin ? p.wins + 1 : p.wins, matches: p.matches + 1 }).catch(console.error);
-    }
-    const entry = {
-      date: new Date().toLocaleDateString("es-AR"),
-      team1: team1.map(x => x.name).join(" & "),
-      team2: team2.map(x => x.name).join(" & "),
-      score: `${s1} - ${s2}`,
-      winner: winners.map(x => x.name).join(" & "),
+    // Add as ACTIVE match (no score yet) — result is entered from the main list
+    const newMatch = {
+      id: Date.now(),
+      team1, team2,
+      score1: "", score2: "",
+      s0a: "", s0b: "", s1a: "", s1b: "", s2a: "", s2b: "",
+      matchType: matchType || "short",
+      done: false,
+      free: true,
+      tournamentId: tournamentId || null,
     };
-    addMatchHistory(entry).catch(console.error);
-    if (tournamentId) addTournamentMatch(tournamentId, entry).catch(console.error);
-    notify("Partido cargado ⚡");
-    setShowFreeMatch(false);
+    writeSession({ matches: [...matches, newMatch] });
+    notify("Partido agregado al listado ⚡");
+    // Modal stays open to add more matches
   }
 
   function handleRotationScore(rotId, team, val) {

@@ -362,7 +362,7 @@ export function getScreens({
         </>
       ) : (
         <>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <SectionLabel style={{ marginBottom: 0 }}>{matches.filter(m => m.done).length}/{matches.length} COMPLETADOS</SectionLabel>
             {isAdmin && (
               <button onClick={() => writeSession({ matches: [], waitingPair: [], rotations: [], rotationStep: 0 })}
@@ -372,10 +372,29 @@ export function getScreens({
             )}
           </div>
 
+          {isSuperuser && (
+            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
+              <button onClick={() => setShowFreeMatch(true)}
+                style={{ flex: 1, background: "#00d4aa15", border: "1px solid #00d4aa33", borderRadius: 12, padding: "11px", color: "#00d4aa", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                ⚡ Partido libre
+              </button>
+              <button onClick={() => setShowTournament(true)}
+                style={{ flex: 1, background: "#ffffff08", border: "1px solid #ffffff15", borderRadius: 12, padding: "11px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                🏆 Torneos
+              </button>
+              {isAdmin && (
+                <button onClick={() => setShowDataMgmt(true)}
+                  style={{ flex: 1, background: "#ff6b6b11", border: "1px solid #ff6b6b33", borderRadius: 12, padding: "11px", color: "#ff6b6b", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
+                  🗄️ Datos
+                </button>
+              )}
+            </div>
+          )}
+
           {matches.map(match => (
             <div key={match.id} style={{ background: match.done ? "#00d4aa0a" : "#ffffff08", border: match.done ? "1px solid #00d4aa2a" : "1px solid #ffffff10", borderRadius: 16, padding: "16px", marginBottom: 14 }}>
-              <div style={{ fontSize: 10, color: match.category ? getLevelColor(match.category) : "#555", fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>
-                CANCHA {match.id + 1}{match.category ? ` · NIVEL ${getLevelLabel(match.category)}` : ""}
+              <div style={{ fontSize: 10, color: match.free ? "#f59e0b" : match.category ? getLevelColor(match.category) : "#555", fontWeight: 700, letterSpacing: 2, marginBottom: 10 }}>
+                {match.free ? `⚡ PARTIDO LIBRE · ${match.matchType === "long" ? "LARGO 🎾" : "CORTO"}` : `CANCHA ${match.id + 1}${match.category ? ` · NIVEL ${getLevelLabel(match.category)}` : ""}`}
               </div>
 
               <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
@@ -412,9 +431,9 @@ export function getScreens({
                 <div style={{ textAlign: "center", padding: "10px", fontSize: 22, fontWeight: 800, color: "#00d4aa", letterSpacing: 5 }}>
                   {match.score1} — {match.score2} ✓
                 </div>
-              ) : !isAdmin ? (
-                <div style={{ textAlign: "center", fontSize: 12, color: "#444", padding: "8px 0" }}>⏳ Esperando resultado del admin…</div>
-              ) : matchType === "long" ? (
+              ) : !isSuperuser ? (
+                <div style={{ textAlign: "center", fontSize: 12, color: "#444", padding: "8px 0" }}>⏳ Esperando resultado…</div>
+              ) : (match.matchType || matchType) === "long" ? (
                 <div style={{ padding: "0 4px" }}>
                   <div style={{ display: "flex", marginBottom: 8, paddingLeft: 52 }}>
                     <div style={{ flex: 1, textAlign: "center", fontSize: 10, color: "#00d4aa", fontWeight: 700 }}>{match.team1.map(p => p.name.split(" ")[0]).join("/")}</div>

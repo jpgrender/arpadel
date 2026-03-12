@@ -395,6 +395,13 @@ export function UserPinModal({ user, onClose, onSave }) {
   const isPrivileged = user.role === "admin" || user.role === "super";
   const requiredLen = isPrivileged ? 6 : 4;
 
+  function resetForm() {
+    setTeam1([]); setTeam2([]);
+    setScore1(""); setScore2("");
+    setSets([{a:"",b:""},{a:"",b:""},{a:"",b:""}]);
+    setTournId(""); setError("");
+  }
+
   function handleSave() {
     if (currentPin !== user.pin)                { setError("PIN actual incorrecto"); return; }
     if (newPin.length !== requiredLen)          { setError(`El PIN debe tener exactamente ${requiredLen} dígitos`); return; }
@@ -638,6 +645,13 @@ export function TournamentModal({ tournaments, onClose, onSave, onDelete }) {
   const inputSt = { width: "100%", background: "#0d0d1a", border: "1px solid #ffffff20", borderRadius: 10, padding: "11px 14px", color: "#fff", fontSize: 14, outline: "none", boxSizing: "border-box" };
   const labelSt = { fontSize: 11, color: "#aaa", fontWeight: 700, letterSpacing: 1, marginBottom: 6, display: "block" };
 
+  function resetForm() {
+    setTeam1([]); setTeam2([]);
+    setScore1(""); setScore2("");
+    setSets([{a:"",b:""},{a:"",b:""},{a:"",b:""}]);
+    setTournId(""); setError("");
+  }
+
   function handleSave() {
     if (!form.name.trim()) return;
     onSave({ ...form, id: String(Date.now()), status: "active" });
@@ -733,11 +747,10 @@ export function TournamentModal({ tournaments, onClose, onSave, onDelete }) {
 export function FreeMatchModal({ players, tournaments, busyPlayerIds = [], onSave, onClose }) {
   const [team1,     setTeam1]     = useState([]);
   const [team2,     setTeam2]     = useState([]);
-  const [score1,    setScore1]    = useState("");
-  const [score2,    setScore2]    = useState("");
   const [tournId,   setTournId]   = useState("");
   const [matchType, setMatchType] = useState("short");
   const [error,     setError]     = useState("");
+  const [saved,     setSaved]     = useState(0);
 
   const selected = [...team1, ...team2].map(p => p.id);
   const available = players.filter(p => !selected.includes(p.id));
@@ -751,20 +764,23 @@ export function FreeMatchModal({ players, tournaments, busyPlayerIds = [], onSav
     if (team === 1) setTeam1(t => t.filter(x => x.id !== p.id));
     else setTeam2(t => t.filter(x => x.id !== p.id));
   }
-
+  function resetForm() {
+    setTeam1([]); setTeam2([]);
+    setTournId(""); setError("");
+  }
   function handleSave() {
     if (team1.length !== 2 || team2.length !== 2) { setError("Cada equipo necesita 2 jugadores"); return; }
-    if (score1 === "" || score2 === "") { setError("Ingresá el resultado"); return; }
-    if (parseInt(score1) === parseInt(score2)) { setError("No puede terminar empatado"); return; }
     setError("");
-    onSave({ team1, team2, score1, score2, matchType, tournamentId: tournId || null });
+    onSave({ team1, team2, matchType, tournamentId: tournId || null });
+    setSaved(s => s + 1);
+    resetForm();
   }
 
   const teamBox = (team, teamNum) => (
-    <div style={{ flex: 1, background: "#ffffff08", borderRadius: 12, padding: 12, border: "1px solid #ffffff10", minHeight: 80 }}>
+    <div style={{ flex: 1, background: "#ffffff08", borderRadius: 12, padding: 12, border: "1px solid #ffffff10", minHeight: 70 }}>
       <div style={{ fontSize: 11, color: teamNum === 1 ? "#00d4aa" : "#6ab4ff", fontWeight: 800, marginBottom: 8 }}>EQUIPO {teamNum}</div>
       {team.map(p => (
-        <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+        <div key={p.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
           <span style={{ fontSize: 13, color: "#fff", fontWeight: 700 }}>{p.name}</span>
           <button onClick={() => removeFromTeam(p, teamNum)} style={{ background: "transparent", border: "none", color: "#ff6b6b", cursor: "pointer", fontSize: 14 }}>✕</button>
         </div>
@@ -778,33 +794,13 @@ export function FreeMatchModal({ players, tournaments, busyPlayerIds = [], onSav
       <div style={{ background: "#13131f", borderRadius: "20px 20px 0 0", padding: "20px 20px 40px", width: "100%", maxWidth: 420, border: "1px solid #ffffff15", maxHeight: "92vh", overflowY: "auto" }}
         onClick={e => e.stopPropagation()}>
         <div style={{ width: 40, height: 4, background: "#ffffff20", borderRadius: 2, margin: "0 auto 16px" }} />
-        <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", marginBottom: 20 }}>⚡ Cargar partido</div>
-
-        {/* Teams */}
-        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
-          {teamBox(team1, 1)}
-          {teamBox(team2, 2)}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+          <div style={{ fontSize: 16, fontWeight: 900, color: "#fff" }}>⚡ Nuevo partido</div>
+          {saved > 0 && <div style={{ fontSize: 12, color: "#00d4aa", fontWeight: 700 }}>{saved} agregado{saved !== 1 ? "s" : ""} ✓</div>}
         </div>
+        <div style={{ fontSize: 12, color: "#555", marginBottom: 20 }}>El partido queda activo — cargás el resultado desde el listado</div>
 
-        {/* Available players */}
-        <div style={{ fontSize: 11, color: "#aaa", fontWeight: 700, marginBottom: 8 }}>JUGADORES DISPONIBLES</div>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-          {available.sort((a,b) => a.name.localeCompare(b.name)).map(p => {
-            const isBusy = busyPlayerIds.includes(p.id);
-            return (
-            <div key={p.id} style={{ display: "flex", gap: 4, opacity: isBusy ? 0.35 : 1 }}>
-              <div onClick={() => !isBusy && addToTeam(p, 1)} style={{ background: isBusy ? "#ffffff08" : "#00d4aa22", border: isBusy ? "1px solid #ffffff10" : "1px solid #00d4aa44", borderRadius: 8, padding: "5px 10px", fontSize: 12, color: isBusy ? "#555" : "#00d4aa", cursor: isBusy || team1.length >= 2 ? "not-allowed" : "pointer", fontWeight: 700 }}>
-                {p.name}{isBusy ? " 🔒" : " →1"}
-              </div>
-              {!isBusy && <div onClick={() => addToTeam(p, 2)} style={{ background: "#6ab4ff22", border: "1px solid #6ab4ff44", borderRadius: 8, padding: "5px 10px", fontSize: 12, color: "#6ab4ff", cursor: team2.length >= 2 ? "not-allowed" : "pointer", fontWeight: 700 }}>
-                →2
-              </div>}
-            </div>
-          );
-          })}
-        </div>
-
-        {/* Tipo de partido */}
+        {/* Tipo */}
         <div style={{ fontSize: 11, color: "#aaa", fontWeight: 700, marginBottom: 8 }}>TIPO DE PARTIDO</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {[["short", "⚡ Corto", "#00d4aa"], ["long", "🎾 Largo", "#6ab4ff"]].map(([val, label, color]) => (
@@ -817,14 +813,36 @@ export function FreeMatchModal({ players, tournaments, busyPlayerIds = [], onSav
             </div>
           ))}
         </div>
-        {/* Score */}
-        <div style={{ fontSize: 11, color: "#aaa", fontWeight: 700, marginBottom: 8 }}>{matchType === "short" ? "RESULTADO (games)" : "RESULTADO (sets)"}</div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", marginBottom: 16 }}>
-          <input type="number" min="0" max="99" value={score1} onChange={e => setScore1(e.target.value)}
-            placeholder="Eq.1" style={{ flex: 1, background: "#0d0d1a", border: "1px solid #00d4aa44", borderRadius: 10, padding: "12px", color: "#fff", fontSize: 18, fontWeight: 900, textAlign: "center", outline: "none" }} />
-          <span style={{ color: "#444", fontWeight: 900, fontSize: 18 }}>—</span>
-          <input type="number" min="0" max="99" value={score2} onChange={e => setScore2(e.target.value)}
-            placeholder="Eq.2" style={{ flex: 1, background: "#0d0d1a", border: "1px solid #6ab4ff44", borderRadius: 10, padding: "12px", color: "#fff", fontSize: 18, fontWeight: 900, textAlign: "center", outline: "none" }} />
+
+        {/* Teams */}
+        <div style={{ display: "flex", gap: 10, marginBottom: 16 }}>
+          {teamBox(team1, 1)}
+          {teamBox(team2, 2)}
+        </div>
+
+        {/* Available players */}
+        <div style={{ fontSize: 11, color: "#aaa", fontWeight: 700, marginBottom: 8 }}>JUGADORES</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+          {players.sort((a,b) => a.name.localeCompare(b.name)).map(p => {
+            const inT1 = team1.some(x => x.id === p.id);
+            const inT2 = team2.some(x => x.id === p.id);
+            const isBusy = !inT1 && !inT2 && busyPlayerIds.includes(p.id);
+            if (inT1 || inT2) return null;
+            return (
+              <div key={p.id} style={{ display: "flex", gap: 4, opacity: isBusy ? 0.35 : 1 }}>
+                <div onClick={() => !isBusy && addToTeam(p, 1)}
+                  style={{ background: isBusy ? "#ffffff08" : "#00d4aa22", border: isBusy ? "1px solid #ffffff10" : "1px solid #00d4aa44", borderRadius: 8, padding: "5px 10px", fontSize: 12, color: isBusy ? "#555" : "#00d4aa", cursor: isBusy || team1.length >= 2 ? "not-allowed" : "pointer", fontWeight: 700 }}>
+                  {p.name}{isBusy ? " 🔒" : " →1"}
+                </div>
+                {!isBusy && (
+                  <div onClick={() => addToTeam(p, 2)}
+                    style={{ background: "#6ab4ff22", border: "1px solid #6ab4ff44", borderRadius: 8, padding: "5px 10px", fontSize: 12, color: "#6ab4ff", cursor: team2.length >= 2 ? "not-allowed" : "pointer", fontWeight: 700 }}>
+                    →2
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         {/* Torneo opcional */}
@@ -842,8 +860,10 @@ export function FreeMatchModal({ players, tournaments, busyPlayerIds = [], onSav
         {error && <div style={{ color: "#ff6b6b", fontSize: 13, marginBottom: 12, textAlign: "center" }}>{error}</div>}
 
         <div style={{ display: "flex", gap: 10 }}>
-          <button onClick={onClose} style={{ flex: 1, background: "transparent", border: "1px solid #ffffff15", borderRadius: 12, padding: 12, color: "#aaa", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
-          <button onClick={handleSave} style={{ flex: 2, background: "linear-gradient(135deg,#00d4aa,#0066ff)", border: "none", borderRadius: 12, padding: 12, color: "#fff", fontWeight: 800, cursor: "pointer" }}>Guardar partido</button>
+          <button onClick={onClose} style={{ flex: 1, background: "transparent", border: "1px solid #ffffff15", borderRadius: 12, padding: 12, color: "#aaa", fontWeight: 700, cursor: "pointer" }}>Cerrar</button>
+          <button onClick={handleSave} style={{ flex: 2, background: "linear-gradient(135deg,#00d4aa,#0066ff)", border: "none", borderRadius: 12, padding: 12, color: "#fff", fontWeight: 800, cursor: "pointer" }}>
+            ⚡ Agregar partido
+          </button>
         </div>
       </div>
     </div>
