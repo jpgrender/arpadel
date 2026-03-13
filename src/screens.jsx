@@ -90,7 +90,7 @@ export function getScreens({
 
       <button onClick={() => setTab("partido")}
         style={{ width: "100%", marginTop: 8, background: "linear-gradient(135deg,#00d4aa,#0066ff)", border: "none", borderRadius: 14, padding: "16px", color: "#fff", fontWeight: 800, fontSize: 15, cursor: "pointer" }}>
-        {isAdmin ? "🎾 Armar partido →" : "📋 Consultar partidos →"}
+        {isSuperuser ? "🎾 Armar partido →" : "📋 Consultar partidos →"}
       </button>
     </div>
   );
@@ -118,18 +118,18 @@ export function getScreens({
               </button>
             )}
           </div>
-          <ReadOnlyBanner isAdmin={isAdmin} />
+          <ReadOnlyBanner isAdmin={isSuperuser} />
           {[...players].sort((a, b) => a.name.localeCompare(b.name)).map(p => {
             const isGoing = attending.has(p.id);
             return (
               <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 12, background: isGoing ? "#ffffff0d" : "#ffffff05", borderRadius: 12, padding: "11px 14px", marginBottom: 7, border: isGoing ? "1px solid #ffffff15" : "1px solid #ffffff08" }}>
-                {isAdmin && (
+                {isSuperuser && (
                   <div onClick={() => toggleAttend(p.id)}
                     style={{ width: 24, height: 24, borderRadius: 6, cursor: "pointer", flexShrink: 0, background: isGoing ? "#00d4aa" : "#ffffff10", border: isGoing ? "none" : "2px solid #ffffff20", display: "flex", alignItems: "center", justifyContent: "center" }}>
                     {isGoing && <span style={{ fontSize: 13, color: "#fff", fontWeight: 900 }}>✓</span>}
                   </div>
                 )}
-                {!isAdmin && isGoing && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00d4aa", flexShrink: 0 }} />}
+                {!isSuperuser && isGoing && <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#00d4aa", flexShrink: 0 }} />}
                 <div onClick={() => setViewingPlayer(p)}
                   style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, cursor: "pointer", minWidth: 0 }}>
                   <Avatar name={p.name} pts={p.pts} size={38} photoURL={profiles.find(x=>x.id===p.id)?.photoURL} />
@@ -205,14 +205,14 @@ export function getScreens({
     <div style={{ padding: "0 16px 16px" }}>
       {matches.length === 0 ? (
         <>
-          <SectionLabel>{isAdmin ? "CONFIGURAR PARTIDO" : "PARTIDOS DE HOY"}</SectionLabel>
-          <ReadOnlyBanner isAdmin={isAdmin} />
+          <SectionLabel>{isSuperuser ? "CONFIGURAR PARTIDO" : "PARTIDOS DE HOY"}</SectionLabel>
+          <ReadOnlyBanner isAdmin={isSuperuser} />
 
           {/* Asistencia */}
           <div style={{ marginBottom: 20 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
               <div style={{ fontSize: 12, color: "#aaa", fontWeight: 600 }}>¿QUIÉN VA HOY? ({attendingPlayers.length})</div>
-              {isAdmin && (
+              {isSuperuser && (
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => setAllAttend(true)} style={{ fontSize: 11, color: "#00d4aa", background: "transparent", border: "none", cursor: "pointer", fontWeight: 700 }}>Todos</button>
                   <button onClick={() => setAllAttend(false)} style={{ fontSize: 11, color: "#666", background: "transparent", border: "none", cursor: "pointer", fontWeight: 700 }}>Ninguno</button>
@@ -224,7 +224,7 @@ export function getScreens({
                 const isGoing = attending.has(p.id);
                 return (
                   <div key={p.id} onClick={() => toggleAttend(p.id)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, background: isGoing ? "#ffffff0d" : "transparent", borderRadius: 10, padding: "9px 12px", border: isGoing ? "1px solid #ffffff15" : "1px solid #ffffff08", cursor: isAdmin ? "pointer" : "default" }}>
+                    style={{ display: "flex", alignItems: "center", gap: 10, background: isGoing ? "#ffffff0d" : "transparent", borderRadius: 10, padding: "9px 12px", border: isGoing ? "1px solid #ffffff15" : "1px solid #ffffff08", cursor: isSuperuser ? "pointer" : "default" }}>
                     <div style={{ width: 22, height: 22, borderRadius: 5, flexShrink: 0, background: isGoing ? "#00d4aa" : "#ffffff10", border: isGoing ? "none" : "2px solid #ffffff20", display: "flex", alignItems: "center", justifyContent: "center" }}>
                       {isGoing && <span style={{ fontSize: 12, color: "#fff", fontWeight: 900 }}>✓</span>}
                     </div>
