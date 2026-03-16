@@ -369,12 +369,20 @@ export function getScreens({
         <>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <SectionLabel style={{ marginBottom: 0 }}>{matches.filter(m => m.done).length}/{matches.length} COMPLETADOS</SectionLabel>
-            {isAdmin && (
-              <button onClick={() => writeSession({ matches: [], waitingPair: [], rotations: [], rotationStep: 0 })}
-                style={{ background: "transparent", border: "1px solid #ffffff15", borderRadius: 8, padding: "6px 12px", color: "#666", fontSize: 12, cursor: "pointer" }}>
-                ↩ Reconfigurar
-              </button>
-            )}
+            <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {isSuperuser && (
+                <button onClick={() => setShowQuickMatch(true)}
+                  style={{ background: "#ffffff0d", border: "1px solid #ffffff15", borderRadius: 8, padding: "6px 12px", color: "#aaa", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  ➕ Partido
+                </button>
+              )}
+              {isAdmin && (
+                <button onClick={() => writeSession({ matches: [], waitingPair: [], rotations: [], rotationStep: 0 })}
+                  style={{ background: "transparent", border: "1px solid #ffffff15", borderRadius: 8, padding: "6px 12px", color: "#666", fontSize: 12, cursor: "pointer" }}>
+                  ↩ Reconfigurar
+                </button>
+              )}
+            </div>
           </div>
 
           {isSuperuser && (
