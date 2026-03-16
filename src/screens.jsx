@@ -51,6 +51,7 @@ export function getScreens({
   handleConfirmMatch, handleConfirmRotation, handleRotationScore,
   writeSession,
 }) {
+  const [showSorteo, setShowSorteo] = useState(false);
 
   // ── INICIO ────────────────────────────────────────────────────────────────
   const inicio = (
@@ -203,9 +204,17 @@ export function getScreens({
   // ── PARTIDO ───────────────────────────────────────────────────────────────
   const partido = (
     <div style={{ padding: "0 16px 16px" }}>
-      {matches.length === 0 ? (
+      {/* Config section - always visible, collapsible when matches exist */}
+      {(matches.length === 0 || showSorteo) && (
         <>
-          <SectionLabel>{isSuperuser ? "CONFIGURAR PARTIDO" : "PARTIDOS DE HOY"}</SectionLabel>
+          {matches.length > 0 && (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <SectionLabel style={{ marginBottom: 0 }}>{isSuperuser ? "CONFIGURAR SORTEO" : "CONFIGURAR PARTIDO"}</SectionLabel>
+              <button onClick={() => setShowSorteo(false)}
+                style={{ background: "transparent", border: "1px solid #ffffff15", borderRadius: 8, padding: "5px 12px", color: "#aaa", fontSize: 12, cursor: "pointer" }}>✕ Cerrar</button>
+            </div>
+          )}
+          {matches.length === 0 && <SectionLabel>{isSuperuser ? "CONFIGURAR PARTIDO" : "PARTIDOS DE HOY"}</SectionLabel>}
           <ReadOnlyBanner isAdmin={isSuperuser} />
 
           {/* Asistencia */}
@@ -365,11 +374,20 @@ export function getScreens({
             </>
           )}
         </>
-      ) : (
+      )}
+
+      {/* Matches list - visible when matches exist */}
+      {matches.length > 0 && (
         <>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
             <SectionLabel style={{ marginBottom: 0 }}>{matches.filter(m => m.done).length}/{matches.length} COMPLETADOS</SectionLabel>
             <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+              {isSuperuser && !showSorteo && (
+                <button onClick={() => setShowSorteo(true)}
+                  style={{ background: "#0066ff15", border: "1px solid #0066ff33", borderRadius: 8, padding: "6px 12px", color: "#6ab4ff", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                  ⚡ Sorteo
+                </button>
+              )}
               {isSuperuser && (
                 <button onClick={() => setShowQuickMatch(true)}
                   style={{ background: "#ffffff0d", border: "1px solid #ffffff15", borderRadius: 8, padding: "6px 12px", color: "#aaa", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
