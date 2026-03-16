@@ -47,11 +47,11 @@ export function getScreens({
   // handlers
   toggleAttend, setAllAttend, setEditingPlayer, setViewingPlayer,
   setShowUsersMgmt, setShowQuickMatch,
+  showSorteo, setShowSorteo,
   handleGenerate, handleScoreChange, handleSetChange,
   handleConfirmMatch, handleConfirmRotation, handleRotationScore,
   writeSession,
 }) {
-  const [showSorteo, setShowSorteo] = useState(false);
 
   // ── INICIO ────────────────────────────────────────────────────────────────
   const inicio = (

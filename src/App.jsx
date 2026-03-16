@@ -114,6 +114,7 @@ export default function App() {
   const [pairSearch,     setPairSearch]     = useState("");
   const [showUsersMgmt,  setShowUsersMgmt]  = useState(false);
   const [showQuickMatch, setShowQuickMatch] = useState(false);
+  const [showSorteo,     setShowSorteo]     = useState(false);
   const [showUserPin,    setShowUserPin]    = useState(false);
   const [viewingPlayer,  setViewingPlayer]  = useState(null);
   const [showTournament, setShowTournament] = useState(false);
@@ -319,7 +320,8 @@ export default function App() {
 
     const { matches: m, waitingPair: wp, sittingOut: so, rotations: rots } = generateMatches(attendingPlayers, courts, mode, matchType, pairHistory);
     if (!m.length) { notify("No hay suficientes jugadores", "#ff6b6b"); return; }
-    writeSession({ matches: m, waitingPair: wp, sittingOut: so ?? [], rotations: rots, rotationStep: 0 });
+    writeSession({ matches: [...matches, ...m], waitingPair: wp, sittingOut: so ?? [], rotations: rots, rotationStep: 0 });
+    setShowSorteo(false);
     setTab("partido");
     notify(`¡${m.length} partido${m.length > 1 ? "s" : ""} generado${m.length > 1 ? "s" : ""}!`);
   }
@@ -522,6 +524,7 @@ export default function App() {
     tab, setTab, playersSubTab, setPlayersSubTab, pairSearch, setPairSearch,
     toggleAttend, setAllAttend, setEditingPlayer, setViewingPlayer,
     setShowUsersMgmt, setShowQuickMatch,
+    showSorteo, setShowSorteo,
     handleGenerate, handleScoreChange, handleSetChange,
     handleConfirmMatch, handleConfirmRotation, handleRotationScore,
     writeSession,
