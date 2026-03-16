@@ -380,6 +380,50 @@ export default function App() {
 
     const newMatches = matches.map(m => m.id === matchId ? { ...m, done: true, winners, losers } : m);
 
+    // ── Consolation points for absent players ───────────────────────────────
+    // When ALL matches are done, give absent players the minimum pts earned today
+    const allDone = newMatches.every(m => m.done);
+    if (allDone) {
+      // Calculate points each participating player earned today
+      const earnedToday = {};
+      for (const m of newMatches) {
+        let ms1, ms2;
+        if ((m.matchType || matchType) === "long") {
+          let t1s = 0, t2s = 0; ms1 = 0; ms2 = 0;
+          for (let si = 0; si < 3; si++) {
+            const a = parseInt(m[`s${si}a`]), b = parseInt(m[`s${si}b`]);
+            if (isNaN(a) || isNaN(b)) continue;
+            if (a > b) t1s++; if (b > a) t2s++; ms1 += a; ms2 += b;
+          }
+          const mWinners = t1s > t2s ? m.team1 : m.team2;
+          for (const p of [...m.team1, ...m.team2]) {
+            const isWin = mWinners.some(x => x.id === p.id);
+            const pts = (isWin ? Math.max(ms1, ms2) : Math.min(ms1, ms2)) * 5 + (isWin ? 10 : 0);
+            earnedToday[p.id] = (earnedToday[p.id] ?? 0) + pts;
+          }
+        } else {
+          ms1 = parseInt(m.score1); ms2 = parseInt(m.score2);
+          if (isNaN(ms1) || isNaN(ms2)) continue;
+          const mWinners = ms1 > ms2 ? m.team1 : m.team2;
+          for (const p of [...m.team1, ...m.team2]) {
+            const isWin = mWinners.some(x => x.id === p.id);
+            const pts = (isWin ? Math.max(ms1, ms2) : Math.min(ms1, ms2)) * 5 + (isWin ? 10 : 0);
+            earnedToday[p.id] = (earnedToday[p.id] ?? 0) + pts;
+          }
+        }
+      }
+      const minEarned = Math.min(...Object.values(earnedToday));
+      if (minEarned > 0) {
+        const absentPlayers = players.filter(p => !attending.has(p.id));
+        for (const p of absentPlayers) {
+          savePlayer({ ...p, pts: p.pts + minEarned }).catch(console.error);
+        }
+        if (absentPlayers.length > 0) {
+          notify(`+${minEarned} pts para ${absentPlayers.length} ausente${absentPlayers.length > 1 ? "s" : ""} 🤝`);
+        }
+      }
+    }
+
     // Rotations: if there's a waiting pair and no active rotation yet, start one now
     let newRotations = [...rotations];
     if (waitingPair.length === 2) {
