@@ -374,10 +374,9 @@ export function UsersMgmtModal({ players, users, onClose, onSave }) {
 export function QuickMatchModal({ players, onSave, onClose }) {
   const [team1Ids,  setTeam1Ids]  = useState([]);
   const [team2Ids,  setTeam2Ids]  = useState([]);
-  const [score1,    setScore1]    = useState("");
-  const [score2,    setScore2]    = useState("");
-  const [matchType, setMatchType] = useState("");
+  const [matchType, setMatchType] = useState('');
   const [step,      setStep]      = useState(0);
+  const [added,     setAdded]     = useState(0);
 
   const sorted = [...players].sort((a, b) => b.pts - a.pts);
   const team1 = players.filter(p => team1Ids.includes(p.id));
@@ -390,88 +389,84 @@ export function QuickMatchModal({ players, onSave, onClose }) {
     if (team2Ids.length < 2) { setTeam2Ids(t => [...t, id]); return; }
   }
 
-  const canNext = team1.length === 2 && team2.length === 2;
-  const canSave = canNext && score1 !== "" && score2 !== "";
+  function handleAdd() {
+    if (team1.length !== 2 || team2.length !== 2) return;
+    onSave({ team1, team2, matchType });
+    setTeam1Ids([]);
+    setTeam2Ids([]);
+    setAdded(n => n + 1);
+  }
+
+  const canAdd = team1.length === 2 && team2.length === 2;
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#000000cc", display: "flex", alignItems: "flex-end", justifyContent: "center", zIndex: 300 }} onClick={onClose}>
-      <div style={{ background: "#181828", borderRadius: "20px 20px 0 0", padding: "24px 20px 40px", width: "100%", maxWidth: 420, border: "1px solid #ffffff15", maxHeight: "85vh", overflowY: "auto" }} onClick={e => e.stopPropagation()}>
-        <div style={{ width: 40, height: 4, background: "#ffffff20", borderRadius: 2, margin: "0 auto 16px" }} />
-        <div style={{ fontSize: 16, fontWeight: 900, color: "#fff", marginBottom: 4 }}>⚡ Partido rápido</div>
-        <div style={{ fontSize: 12, color: "#aaa", marginBottom: 16 }}>Registrá un partido sin generar sorteo</div>
+    <div style={{ position: 'fixed', inset: 0, background: '#000000cc', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 300 }} onClick={onClose}>
+      <div style={{ background: '#181828', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 420, border: '1px solid #ffffff15', maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div style={{ width: 40, height: 4, background: '#ffffff20', borderRadius: 2, margin: '0 auto 16px' }} />
+        <div style={{ fontSize: 16, fontWeight: 900, color: '#fff', marginBottom: 4 }}>➕ Registrar partido</div>
+        <div style={{ fontSize: 12, color: '#aaa', marginBottom: 16 }}>El partido se agrega al listado para cargar el resultado después</div>
+
+        {added > 0 && (
+          <div style={{ background: '#00d4aa15', border: '1px solid #00d4aa33', borderRadius: 10, padding: '10px 14px', marginBottom: 14 }}>
+            <div style={{ fontSize: 13, color: '#00d4aa', fontWeight: 700 }}>✓ {added} partido{added > 1 ? 's' : ''} agregado{added > 1 ? 's' : ''} al listado</div>
+          </div>
+        )}
 
         {step === 0 && (
           <>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 20 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
               {[
-                ["short", "⚡ Partido corto", "Game a 7, gana quien llega primero.", "#00d4aa"],
-                ["long",  "🎾 Partido largo", "Mejor de 3 sets con tie-break.",       "#6ab4ff"],
+                ['short', '⚡ Partido corto', 'Game a 7, gana quien llega primero.', '#00d4aa'],
+                ['long',  '🎾 Partido largo', 'Mejor de 3 sets con tie-break.',      '#6ab4ff'],
               ].map(([val, label, desc, color]) => (
                 <div key={val} onClick={() => { setMatchType(val); setStep(1); }}
-                  style={{ background: `${color}11`, border: `2px solid ${color}33`, borderRadius: 14, padding: "18px 16px", cursor: "pointer" }}>
+                  style={{ background: `${color}11`, border: `2px solid ${color}33`, borderRadius: 14, padding: '18px 16px', cursor: 'pointer' }}>
                   <div style={{ fontSize: 15, fontWeight: 800, color }}>{label}</div>
-                  <div style={{ fontSize: 12, color: "#666", marginTop: 4 }}>{desc}</div>
+                  <div style={{ fontSize: 12, color: '#666', marginTop: 4 }}>{desc}</div>
                 </div>
               ))}
             </div>
-            <button onClick={onClose} style={{ width: "100%", background: "transparent", border: "1px solid #ffffff15", borderRadius: 12, padding: "12px", color: "#aaa", fontWeight: 700, cursor: "pointer" }}>Cancelar</button>
+            <button onClick={onClose} style={{ width: '100%', background: 'transparent', border: '1px solid #ffffff15', borderRadius: 12, padding: '12px', color: '#aaa', fontWeight: 700, cursor: 'pointer' }}>Cancelar</button>
           </>
         )}
 
         {step === 1 && (
           <>
-            <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
-              {[{ label: "EQUIPO 1", color: "#00d4aa", ids: team1Ids, team: team1 }, { label: "EQUIPO 2", color: "#6ab4ff", ids: team2Ids, team: team2 }].map(({ label, color, team }) => (
-                <div key={label} style={{ flex: 1, background: `${color}15`, border: `1px solid ${color}33`, borderRadius: 10, padding: "10px", minHeight: 60 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <div style={{ fontSize: 12, color: matchType === 'short' ? '#00d4aa' : '#6ab4ff', fontWeight: 700, background: matchType === 'short' ? '#00d4aa15' : '#6ab4ff15', borderRadius: 8, padding: '4px 10px' }}>
+                {matchType === 'short' ? '⚡ Partido corto' : '🎾 Partido largo'}
+              </div>
+              <button onClick={() => setStep(0)} style={{ background: 'transparent', border: 'none', color: '#555', fontSize: 12, cursor: 'pointer' }}>cambiar</button>
+            </div>
+            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+              {[{ label: 'EQUIPO 1', color: '#00d4aa', ids: team1Ids, team: team1 }, { label: 'EQUIPO 2', color: '#6ab4ff', ids: team2Ids, team: team2 }].map(({ label, color, team }) => (
+                <div key={label} style={{ flex: 1, background: `${color}15`, border: `1px solid ${color}33`, borderRadius: 10, padding: '10px', minHeight: 60 }}>
                   <div style={{ fontSize: 10, color, fontWeight: 700, marginBottom: 6 }}>{label}</div>
-                  {team.map(p => <div key={p.id} style={{ fontSize: 12, color: "#fff", fontWeight: 600 }}>{p.name}</div>)}
-                  {team.length < 2 && <div style={{ fontSize: 11, color: "#aaa" }}>Seleccioná {2 - team.length} más</div>}
+                  {team.map(p => <div key={p.id} style={{ fontSize: 12, color: '#fff', fontWeight: 600 }}>{p.name}</div>)}
+                  {team.length < 2 && <div style={{ fontSize: 11, color: '#aaa' }}>Seleccioná {2 - team.length} más</div>}
                 </div>
               ))}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 16 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 16 }}>
               {sorted.map(p => {
                 const inT1 = team1Ids.includes(p.id), inT2 = team2Ids.includes(p.id);
                 return (
                   <div key={p.id} onClick={() => togglePlayer(p.id)}
-                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", borderRadius: 10, cursor: "pointer", background: inT1 ? "#00d4aa22" : inT2 ? "#0066ff22" : "#ffffff08", border: inT1 ? "1px solid #00d4aa44" : inT2 ? "1px solid #0066ff44" : "1px solid #ffffff10" }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', borderRadius: 10, cursor: 'pointer', background: inT1 ? '#00d4aa22' : inT2 ? '#0066ff22' : '#ffffff08', border: inT1 ? '1px solid #00d4aa44' : inT2 ? '1px solid #0066ff44' : '1px solid #ffffff10' }}>
                     <Avatar name={p.name} pts={p.pts} size={28} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: (inT1 || inT2) ? "#fff" : "#666", flex: 1 }}>{p.name}</span>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: (inT1 || inT2) ? '#fff' : '#666', flex: 1 }}>{p.name}</span>
                     <LevelBadge pts={p.pts} />
-                    {inT1 && <span style={{ fontSize: 10, color: "#00d4aa", fontWeight: 700 }}>E1</span>}
-                    {inT2 && <span style={{ fontSize: 10, color: "#6ab4ff", fontWeight: 700 }}>E2</span>}
+                    {inT1 && <span style={{ fontSize: 10, color: '#00d4aa', fontWeight: 700 }}>E1</span>}
+                    {inT2 && <span style={{ fontSize: 10, color: '#6ab4ff', fontWeight: 700 }}>E2</span>}
                   </div>
                 );
               })}
             </div>
-            <button onClick={() => setStep(2)} disabled={!canNext}
-              style={{ width: "100%", background: canNext ? "#00d4aa" : "#333", border: "none", borderRadius: 12, padding: "14px", color: canNext ? "#fff" : "#666", fontWeight: 800, fontSize: 14, cursor: canNext ? "pointer" : "not-allowed" }}>
-              Siguiente →
-            </button>
-          </>
-        )}
-
-        {step === 2 && (
-          <>
-            <div style={{ marginBottom: 16, background: "#ffffff08", borderRadius: 12, padding: "14px" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#fff", fontWeight: 700 }}>
-                <span>{team1.map(p => p.name).join(" & ")}</span>
-                <span style={{ color: "#999" }}>vs</span>
-                <span>{team2.map(p => p.name).join(" & ")}</span>
-              </div>
-            </div>
-            <div style={{ display: "flex", gap: 8, alignItems: "center", marginBottom: 20 }}>
-              <input type="number" min="0" value={score1} onChange={e => setScore1(e.target.value)} placeholder="0"
-                style={{ flex: 1, background: "#00d4aa22", border: "1px solid #00d4aa44", borderRadius: 8, padding: "16px", color: "#fff", fontSize: 28, fontWeight: 800, textAlign: "center", outline: "none" }} />
-              <span style={{ color: "#666", fontWeight: 800, fontSize: 22 }}>—</span>
-              <input type="number" min="0" value={score2} onChange={e => setScore2(e.target.value)} placeholder="0"
-                style={{ flex: 1, background: "#0066ff22", border: "1px solid #0066ff44", borderRadius: 8, padding: "16px", color: "#fff", fontSize: 28, fontWeight: 800, textAlign: "center", outline: "none" }} />
-            </div>
-            <div style={{ display: "flex", gap: 8 }}>
-              <button onClick={() => setStep(1)} style={{ flex: 1, background: "transparent", border: "1px solid #ffffff15", borderRadius: 12, padding: "14px", color: "#aaa", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>← Atrás</button>
-              <button onClick={() => onSave({ team1, team2, score1, score2, matchType })} disabled={!canSave}
-                style={{ flex: 2, background: canSave ? "#00d4aa" : "#333", border: "none", borderRadius: 12, padding: "14px", color: canSave ? "#fff" : "#666", fontWeight: 800, fontSize: 14, cursor: canSave ? "pointer" : "not-allowed" }}>
-                Guardar ✓
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={onClose} style={{ flex: 1, background: 'transparent', border: '1px solid #ffffff15', borderRadius: 12, padding: '14px', color: '#aaa', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>Cerrar</button>
+              <button onClick={handleAdd} disabled={!canAdd}
+                style={{ flex: 2, background: canAdd ? '#00d4aa' : '#333', border: 'none', borderRadius: 12, padding: '14px', color: canAdd ? '#fff' : '#666', fontWeight: 800, fontSize: 14, cursor: canAdd ? 'pointer' : 'not-allowed' }}>
+                ➕ Agregar partido
               </button>
             </div>
           </>

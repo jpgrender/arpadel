@@ -407,24 +407,20 @@ export default function App() {
     notify("¡Resultado guardado! 🎾");
   }
 
-  function handleQuickMatchSave({ team1, team2, score1, score2 }) {
+  function handleQuickMatchSave({ team1, team2, matchType }) {
     if (!isSuperuser) return;
-    const s1 = parseInt(score1), s2 = parseInt(score2);
-    if (isNaN(s1) || isNaN(s2)) { notify("Resultado inválido", "#ff6b6b"); return; }
-    const winners = s1 > s2 ? team1 : team2;
-    for (const p of [...team1, ...team2]) {
-      const isWin = winners.some(x => x.id === p.id);
-      savePlayer({ ...p, pts: p.pts + (isWin ? Math.max(s1, s2) * 4 : Math.min(s1, s2) * 2), wins: isWin ? p.wins + 1 : p.wins, matches: p.matches + 1 }).catch(console.error);
-    }
-    addMatchHistory({
-      date: new Date().toLocaleDateString("es-AR"),
-      team1: team1.map(x => x.name).join(" & "),
-      team2: team2.map(x => x.name).join(" & "),
-      score: `${s1} - ${s2}`,
-      winner: winners.map(x => x.name).join(" & "),
-    }).catch(console.error);
-    notify("Partido rápido guardado ⚡");
-    setShowQuickMatch(false);
+    const newMatch = {
+      id: Date.now(),
+      team1, team2,
+      score1: "", score2: "",
+      s0a: "", s0b: "", s1a: "", s1b: "", s2a: "", s2b: "",
+      matchType: matchType || "short",
+      done: false,
+      free: true,
+      tournamentId: null,
+    };
+    writeSession({ matches: [...matches, newMatch] });
+    notify("Partido agregado al listado ✓");
   }
 
 

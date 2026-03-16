@@ -360,7 +360,7 @@ export function getScreens({
 
               <button onClick={() => setShowQuickMatch(true)}
                 style={{ width: "100%", marginTop: 10, background: "#ffffff10", border: "1px solid #ffffff20", borderRadius: 12, padding: "14px", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
-                ➕ Registrar partido rápido
+                ➕ Registrar partido
               </button>
             </>
           )}
