@@ -307,24 +307,40 @@ export default function App() {
 
   function handleGenerate() {
     if (!isSuperuser) return;
-    if (attendingPlayers.length < 4) { notify("Necesitás al menos 4 jugadores", "#ff6b6b"); return; }
+
+    // Players already in an active (not done) match can't be in a new sorteo
+    const busyIds = new Set(
+      matches.filter(m => !m.done)
+             .flatMap(m => [...m.team1, ...m.team2].map(p => p.id))
+    );
+    const freePlayers = attendingPlayers.filter(p => !busyIds.has(p.id));
+
+    if (freePlayers.length < 4) {
+      notify(busyIds.size > 0
+        ? `Solo ${freePlayers.length} jugador${freePlayers.length !== 1 ? "es" : ""} sin partido activo — necesitás al menos 4`
+        : "Necesitás al menos 4 jugadores", "#ff6b6b");
+      return;
+    }
 
     // Long matches: strict — no sitting out, no rotation
     if (matchType === "long") {
       const fits = courts * 4;
-      if (attendingPlayers.length > fits) {
-        notify(`${attendingPlayers.length} jugadores no entran en ${courts} canchas (máx ${fits} para partido largo)`, "#ff6b6b");
+      if (freePlayers.length > fits) {
+        notify(`${freePlayers.length} jugadores libres no entran en ${courts} canchas (máx ${fits} para partido largo)`, "#ff6b6b");
         return;
       }
-      if (attendingPlayers.length % 4 !== 0) {
-        notify(`${attendingPlayers.length} jugadores no forman grupos exactos de 4 para partido largo`, "#ff6b6b");
+      if (freePlayers.length % 4 !== 0) {
+        notify(`${freePlayers.length} jugadores libres no forman grupos exactos de 4 para partido largo`, "#ff6b6b");
         return;
       }
     }
 
-    const { matches: m, waitingPair: wp, sittingOut: so, rotations: rots } = generateMatches(attendingPlayers, courts, mode, matchType, pairHistory);
-    if (!m.length) { notify("No hay suficientes jugadores", "#ff6b6b"); return; }
-    writeSession({ matches: [...matches, ...m], waitingPair: wp, sittingOut: so ?? [], rotations: rots, rotationStep: 0 });
+    const { matches: m, waitingPair: wp, sittingOut: so, rotations: rots } = generateMatches(freePlayers, courts, mode, matchType, pairHistory);
+    if (!m.length) { notify("No hay suficientes jugadores libres", "#ff6b6b"); return; }
+    // Give new matches unique IDs to avoid collision with existing ones
+    const maxId = matches.reduce((max, x) => Math.max(max, x.id ?? 0), 0);
+    const newMatches = m.map((x, i) => ({ ...x, id: maxId + i + 1 }));
+    writeSession({ matches: [...matches, ...newMatches], waitingPair: wp, sittingOut: so ?? [], rotations: rots, rotationStep: 0 });
     setShowSorteo(false);
     setTab("partido");
     notify(`¡${m.length} partido${m.length > 1 ? "s" : ""} generado${m.length > 1 ? "s" : ""}!`);
@@ -581,6 +597,7 @@ export default function App() {
     setShowUsersMgmt, setShowQuickMatch,
     showSorteo, setShowSorteo,
     confirmCancel, setConfirmCancel, handleCancelMatch,
+    busyPlayerIds: matches.filter(m => !m.done).flatMap(m => [...m.team1, ...m.team2].map(p => p.id)),
     handleGenerate, handleScoreChange, handleSetChange,
     handleConfirmMatch, handleConfirmRotation, handleRotationScore,
     writeSession,
