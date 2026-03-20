@@ -50,6 +50,7 @@ export function getScreens({
   showSorteo, setShowSorteo,
   handleGenerate, handleScoreChange, handleSetChange,
   handleConfirmMatch, handleConfirmRotation, handleRotationScore,
+  confirmCancel, setConfirmCancel, handleCancelMatch,
   writeSession,
 }) {
 
@@ -449,6 +450,21 @@ export function getScreens({
                     style={{ width: "100%", background: "linear-gradient(135deg,#00d4aa,#0066ff)", border: "none", borderRadius: 10, padding: "13px", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer", marginTop: 4 }}>
                     ✓ Confirmar resultado
                   </button>
+                  {confirmCancel === match.id ? (
+                    <div style={{ marginTop: 8, background: "#ff6b6b11", border: "1px solid #ff6b6b44", borderRadius: 10, padding: "12px" }}>
+                      <div style={{ fontSize: 13, color: "#ff6b6b", fontWeight: 800, marginBottom: 8, textAlign: "center" }}>⚠️ ¿Cancelar este partido?</div>
+                      <div style={{ fontSize: 12, color: "#aaa", marginBottom: 10, textAlign: "center" }}>No se guardan resultados ni estadísticas.</div>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button onClick={() => setConfirmCancel(null)} style={{ flex: 1, background: "transparent", border: "1px solid #ffffff20", borderRadius: 8, padding: "10px", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Volver</button>
+                        <button onClick={() => handleCancelMatch(match.id)} style={{ flex: 2, background: "#ff6b6b", border: "none", borderRadius: 8, padding: "10px", color: "#fff", fontWeight: 800, cursor: "pointer" }}>Sí, cancelar partido</button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button onClick={() => setConfirmCancel(match.id)}
+                      style={{ width: "100%", background: "transparent", border: "1px solid #ff6b6b33", borderRadius: 10, padding: "10px", color: "#ff6b6b", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 6 }}>
+                      ✕ Cancelar partido
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "0 4px" }}>
@@ -462,6 +478,21 @@ export function getScreens({
                     ✓ OK
                   </button>
                 </div>
+                {confirmCancel === match.id ? (
+                  <div style={{ marginTop: 8, background: "#ff6b6b11", border: "1px solid #ff6b6b44", borderRadius: 10, padding: "12px" }}>
+                    <div style={{ fontSize: 13, color: "#ff6b6b", fontWeight: 800, marginBottom: 8, textAlign: "center" }}>⚠️ ¿Cancelar este partido?</div>
+                    <div style={{ fontSize: 12, color: "#aaa", marginBottom: 10, textAlign: "center" }}>No se guardan resultados ni estadísticas.</div>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <button onClick={() => setConfirmCancel(null)} style={{ flex: 1, background: "transparent", border: "1px solid #ffffff20", borderRadius: 8, padding: "10px", color: "#fff", fontWeight: 700, cursor: "pointer" }}>Volver</button>
+                      <button onClick={() => handleCancelMatch(match.id)} style={{ flex: 2, background: "#ff6b6b", border: "none", borderRadius: 8, padding: "10px", color: "#fff", fontWeight: 800, cursor: "pointer" }}>Sí, cancelar partido</button>
+                    </div>
+                  </div>
+                ) : (
+                  <button onClick={() => setConfirmCancel(match.id)}
+                    style={{ width: "100%", background: "transparent", border: "1px solid #ff6b6b33", borderRadius: 10, padding: "10px", color: "#ff6b6b", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 6 }}>
+                    ✕ Cancelar partido
+                  </button>
+                )}
               )}
             </div>
           ))}

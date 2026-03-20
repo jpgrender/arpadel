@@ -118,6 +118,7 @@ export default function App() {
   const [showUsersMgmt,  setShowUsersMgmt]  = useState(false);
   const [showQuickMatch, setShowQuickMatch] = useState(false);
   const [showSorteo,     setShowSorteo]     = useState(false);
+  const [confirmCancel,  setConfirmCancel]  = useState(null); // matchId to cancel
   const [showUserPin,    setShowUserPin]    = useState(false);
   const [viewingPlayer,  setViewingPlayer]  = useState(null);
   const [showTournament, setShowTournament] = useState(false);
@@ -456,6 +457,13 @@ export default function App() {
     notify("¡Resultado guardado! 🎾");
   }
 
+  function handleCancelMatch(matchId) {
+    // Remove match silently — no stats, no history, no pair history
+    writeSession({ matches: matches.filter(m => m.id !== matchId) });
+    setConfirmCancel(null);
+    notify("Partido cancelado");
+  }
+
   function handleQuickMatchSave({ team1, team2, matchType }) {
     if (!isSuperuser) return;
     const newMatch = {
@@ -572,6 +580,7 @@ export default function App() {
     toggleAttend, setAllAttend, setEditingPlayer, setViewingPlayer,
     setShowUsersMgmt, setShowQuickMatch,
     showSorteo, setShowSorteo,
+    confirmCancel, setConfirmCancel, handleCancelMatch,
     handleGenerate, handleScoreChange, handleSetChange,
     handleConfirmMatch, handleConfirmRotation, handleRotationScore,
     writeSession,
