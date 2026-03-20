@@ -17,7 +17,9 @@ import { saveProfile, uploadProfilePhoto } from "./firebase";
 
 // ── Match generation ─────────────────────────────────────────────────────────
 function generateMatches(players, courts, mode, matchType, pairHistory) {
-  const available = [...players].sort((a, b) => b.pts - a.pts);
+  // Use surveyPts as skill reference if set, otherwise fall back to pts
+  const skill = p => p.surveyPts > 0 ? p.surveyPts : p.pts;
+  const available = [...players].sort((a, b) => skill(b) - skill(a));
 
   // Respect the rented courts — cap at what we actually have
   const maxMatches = Math.min(courts, Math.floor(available.length / 4));
@@ -37,8 +39,8 @@ function generateMatches(players, courts, mode, matchType, pairHistory) {
     ].sort((x, y) => {
       const penX = (pairHistory[pairKey(x.t1[0].id, x.t1[1].id)] ?? 0) + (pairHistory[pairKey(x.t2[0].id, x.t2[1].id)] ?? 0);
       const penY = (pairHistory[pairKey(y.t1[0].id, y.t1[1].id)] ?? 0) + (pairHistory[pairKey(y.t2[0].id, y.t2[1].id)] ?? 0);
-      const balX = Math.abs((x.t1[0].pts + x.t1[1].pts) - (x.t2[0].pts + x.t2[1].pts));
-      const balY = Math.abs((y.t1[0].pts + y.t1[1].pts) - (y.t2[0].pts + y.t2[1].pts));
+      const balX = Math.abs((skill(x.t1[0]) + skill(x.t1[1])) - (skill(x.t2[0]) + skill(x.t2[1])));
+      const balY = Math.abs((skill(y.t1[0]) + skill(y.t1[1])) - (skill(y.t2[0]) + skill(y.t2[1])));
       return (penX + balX / 20) - (penY + balY / 20);
     })[0];
   }
@@ -89,6 +91,7 @@ const TABS = [
   { id: "inicio",    icon: "⚡", label: "Inicio"    },
   { id: "jugadores", icon: "👥", label: "Jugadores" },
   { id: "partido",   icon: "🎾", label: "Partido"   },
+  { id: "gestion",   icon: "🛠️", label: "Gestión"   },
   { id: "ranking",   icon: "🏆", label: "Ranking"   },
   { id: "perfil",    icon: "👤", label: "Perfil"    },
 ];

@@ -136,10 +136,10 @@ export function getScreens({
                   <Avatar name={p.name} pts={p.pts} size={38} photoURL={profiles.find(x=>x.id===p.id)?.photoURL} />
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 700, color: isGoing ? "#fff" : "#aaa" }}>{p.name}</span>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: isGoing ? "#fff" : "#ccc" }}>{p.name}</span>
                       <LevelBadge pts={p.pts} />
                     </div>
-                    <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>{p.wins}V · {p.matches - p.wins}D · {p.pts}pts</div>
+                    <div style={{ fontSize: 13, color: "#ccc", marginTop: 2 }}>{p.wins}V · {p.matches - p.wins}D · {p.pts}pts</div>
                   </div>
                 </div>
                 {isAdmin && (
@@ -191,7 +191,7 @@ export function getScreens({
                   <Avatar name={pB.name} pts={pB.pts} size={34} photoURL={profiles.find(x=>x.id===pB.id)?.photoURL} />
                   <div style={{ textAlign: "right", minWidth: 38 }}>
                     <div style={{ fontSize: 20, fontWeight: 900, color: heat, lineHeight: 1 }}>{times}</div>
-                    <div style={{ fontSize: 11, color: "#999" }}>veces</div>
+                    <div style={{ fontSize: 12, color: "#ccc" }}>veces</div>
                   </div>
                 </div>
               );
@@ -238,7 +238,7 @@ export function getScreens({
                       {isGoing && <span style={{ fontSize: 12, color: "#fff", fontWeight: 900 }}>✓</span>}
                     </div>
                     <Avatar name={p.name} pts={p.pts} size={26} photoURL={profiles.find(x=>x.id===p.id)?.photoURL} />
-                    <span style={{ fontSize: 13, fontWeight: 600, color: isGoing ? "#fff" : "#aaa", flex: 1 }}>{p.name}</span>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: isGoing ? "#fff" : "#ccc", flex: 1 }}>{p.name}</span>
                     <LevelBadge pts={p.pts} />
                   </div>
                 );
@@ -256,25 +256,6 @@ export function getScreens({
 
           {isSuperuser && (
             <>
-              {/* Torneo y partido libre */}
-              <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-                <button onClick={() => setShowFreeMatch(true)}
-                  style={{ flex: 1, background: "#ffffff08", border: "1px solid #ffffff15", borderRadius: 12, padding: "11px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                  ⚡ Partido libre
-                </button>
-                <button onClick={() => setShowTournament(true)}
-                  style={{ flex: 1, background: "#ffffff08", border: "1px solid #ffffff15", borderRadius: 12, padding: "11px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                  🏆 Torneos
-                </button>
-              </div>
-              {isAdmin && (
-                <div style={{ marginBottom: 16 }}>
-                  <button onClick={() => setShowDataMgmt(true)}
-                    style={{ width: "100%", background: "#ff6b6b11", border: "1px solid #ff6b6b33", borderRadius: 12, padding: "11px", color: "#ff6b6b", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                    🗄️ Gestión de datos
-                  </button>
-                </div>
-              )}
               {/* Canchas */}
               <div style={{ marginBottom: 20 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
@@ -403,24 +384,7 @@ export function getScreens({
             </div>
           </div>
 
-          {isSuperuser && (
-            <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-              <button onClick={() => setShowFreeMatch(true)}
-                style={{ flex: 1, background: "#00d4aa15", border: "1px solid #00d4aa33", borderRadius: 12, padding: "11px", color: "#00d4aa", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                ⚡ Partido libre
-              </button>
-              <button onClick={() => setShowTournament(true)}
-                style={{ flex: 1, background: "#ffffff08", border: "1px solid #ffffff15", borderRadius: 12, padding: "11px", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                🏆 Torneos
-              </button>
-              {isAdmin && (
-                <button onClick={() => setShowDataMgmt(true)}
-                  style={{ flex: 1, background: "#ff6b6b11", border: "1px solid #ff6b6b33", borderRadius: 12, padding: "11px", color: "#ff6b6b", fontWeight: 700, fontSize: 13, cursor: "pointer" }}>
-                  🗄️ Datos
-                </button>
-              )}
-            </div>
-          )}
+
 
           {matches.map(match => (
             <div key={match.id} style={{ background: match.done ? "#00d4aa0a" : "#ffffff08", border: match.done ? "1px solid #00d4aa2a" : "1px solid #ffffff10", borderRadius: 16, padding: "16px", marginBottom: 14 }}>
@@ -435,7 +399,7 @@ export function getScreens({
                       <Avatar name={p.name} pts={p.pts} size={32} photoURL={profiles.find(x=>x.id===p.id)?.photoURL} />
                       <div>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{p.name}</div>
-                        <div style={{ fontSize: 11, color: "#999" }}>{p.pts}pts</div>
+                        <div style={{ fontSize: 12, color: "#ccc" }}>{p.pts}pts</div>
                       </div>
                     </div>
                   ))}
@@ -449,7 +413,7 @@ export function getScreens({
                     <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, justifyContent: "flex-end" }}>
                       <div style={{ textAlign: "right" }}>
                         <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>{p.name}</div>
-                        <div style={{ fontSize: 11, color: "#999" }}>{p.pts}pts</div>
+                        <div style={{ fontSize: 12, color: "#ccc" }}>{p.pts}pts</div>
                       </div>
                       <Avatar name={p.name} pts={p.pts} size={32} photoURL={profiles.find(x=>x.id===p.id)?.photoURL} />
                     </div>
@@ -653,7 +617,7 @@ export function getScreens({
           <Avatar name={p.name} pts={p.pts} size={36} photoURL={profiles.find(x=>x.id===p.id)?.photoURL} />
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 14, fontWeight: 700, color: "#fff" }}>{p.name}</div>
-            <div style={{ fontSize: 11, color: "#999" }}>{p.wins}V · {p.matches - p.wins}D · {p.matches ? Math.round(p.wins / p.matches * 100) : 0}%</div>
+            <div style={{ fontSize: 12, color: "#ccc" }}>{p.wins}V · {p.matches - p.wins}D · {p.matches ? Math.round(p.wins / p.matches * 100) : 0}%</div>
           </div>
           <div style={{ textAlign: "right" }}>
             <div style={{ fontSize: 16, fontWeight: 900, color: "#00d4aa" }}>{p.pts}</div>
@@ -664,7 +628,52 @@ export function getScreens({
     </div>
   );
 
-  return { inicio, jugadores, partido, ranking: rankingScreen };
+  // ── GESTIÓN ───────────────────────────────────────────────────────────────
+  const gestion = (
+    <div style={{ padding: "0 16px 32px" }}>
+      <SectionLabel>GESTIÓN</SectionLabel>
+      <div style={{ fontSize: 15, fontWeight: 700, color: "#fff", marginBottom: 20 }}>Herramientas del organizador</div>
+
+      {isSuperuser && (
+        <>
+          <div style={{ fontSize: 12, color: "#fff", fontWeight: 800, letterSpacing: 1, marginBottom: 10 }}>PARTIDOS Y TORNEOS</div>
+
+          <button onClick={() => setShowFreeMatch(true)}
+            style={{ width: "100%", background: "#00d4aa15", border: "2px solid #00d4aa44", borderRadius: 14, padding: "18px 16px", color: "#00d4aa", fontWeight: 800, fontSize: 15, cursor: "pointer", textAlign: "left", marginBottom: 10 }}>
+            <div style={{ fontSize: 18, marginBottom: 4 }}>⚡ Nuevo partido manual</div>
+            <div style={{ fontSize: 12, color: "#aaa", fontWeight: 500 }}>Armá un partido eligiendo vos las parejas</div>
+          </button>
+
+          <button onClick={() => setShowTournament(true)}
+            style={{ width: "100%", background: "#6ab4ff15", border: "2px solid #6ab4ff44", borderRadius: 14, padding: "18px 16px", color: "#6ab4ff", fontWeight: 800, fontSize: 15, cursor: "pointer", textAlign: "left", marginBottom: 10 }}>
+            <div style={{ fontSize: 18, marginBottom: 4 }}>🏆 Torneos</div>
+            <div style={{ fontSize: 12, color: "#aaa", fontWeight: 500 }}>Crear y gestionar torneos del grupo</div>
+          </button>
+        </>
+      )}
+
+      {isAdmin && (
+        <>
+          <div style={{ fontSize: 12, color: "#fff", fontWeight: 800, letterSpacing: 1, marginTop: 20, marginBottom: 10 }}>ADMINISTRACIÓN</div>
+
+          <button onClick={() => setShowDataMgmt(true)}
+            style={{ width: "100%", background: "#ff6b6b11", border: "2px solid #ff6b6b44", borderRadius: 14, padding: "18px 16px", color: "#ff6b6b", fontWeight: 800, fontSize: 15, cursor: "pointer", textAlign: "left", marginBottom: 10 }}>
+            <div style={{ fontSize: 18, marginBottom: 4 }}>🗄️ Gestión de datos</div>
+            <div style={{ fontSize: 12, color: "#aaa", fontWeight: 500 }}>Borrar historial, sesión, estadísticas o torneos</div>
+          </button>
+        </>
+      )}
+
+      {!isSuperuser && (
+        <div style={{ textAlign: "center", padding: "60px 0", color: "#444" }}>
+          <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
+          <div style={{ fontSize: 14, color: "#555" }}>Esta sección es solo para organizadores y admins.</div>
+        </div>
+      )}
+    </div>
+  );
+
+  return { inicio, jugadores, partido, gestion, ranking: rankingScreen };
 }
 
 // ── PERFIL SCREEN ─────────────────────────────────────────────────────────────
@@ -934,7 +943,7 @@ export function ProfileScreen({ currentUser, players, attending, profile, onTogg
         </div>
 
         <div style={{ fontSize: 18, fontWeight: 900, color: "#fff" }}>{player.name}</div>
-        {fullName ? <div style={{ fontSize: 12, color: "#aaa", marginTop: 2 }}>{fullName}</div> : null}
+        {fullName ? <div style={{ fontSize: 13, color: "#ccc", marginTop: 2 }}>{fullName}</div> : null}
         {age ? <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{age} años</div> : null}
 
         {/* URL alternativa */}
