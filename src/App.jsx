@@ -632,15 +632,21 @@ export default function App() {
       </div>
 
       {/* Bottom nav */}
-      <div style={{ display: "flex", background: "#13131f", borderTop: "1px solid #ffffff10", position: "sticky", bottom: 0, padding: "8px 0 4px" }}>
-        {TABS.map(t => (
-          <button key={t.id} onClick={() => setTab(t.id)}
-            style={{ flex: 1, background: "transparent", border: "none", cursor: "pointer", padding: "6px 0", display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-            <span style={{ fontSize: 20 }}>{t.icon}</span>
-            <span style={{ fontSize: 10, fontWeight: 700, color: tab === t.id ? "#00d4aa" : "#333" }}>{t.label}</span>
-            {tab === t.id && <div style={{ width: 4, height: 4, borderRadius: "50%", background: "#00d4aa" }} />}
-          </button>
-        ))}
+      <div style={{ display: "flex", background: "#13131f", borderTop: "1px solid #ffffff15", position: "sticky", bottom: 0, padding: "6px 6px 4px" }}>
+        {TABS.map(t => {
+          const active = tab === t.id;
+          return (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{ flex: 1, border: "none", cursor: "pointer", padding: "6px 4px", display: "flex", flexDirection: "column", alignItems: "center", gap: 3,
+                background: active ? "#00d4aa18" : "transparent",
+                borderRadius: 10,
+                outline: active ? "1.5px solid #00d4aa55" : "none",
+              }}>
+              <span style={{ fontSize: 20 }}>{t.icon}</span>
+              <span style={{ fontSize: 11, fontWeight: 800, color: active ? "#00d4aa" : "#fff" }}>{t.label}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Modals */}
