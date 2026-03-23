@@ -9,6 +9,7 @@ import {
 } from "./firebase";
 import {
   LoginScreen, PlayerModal, UsersMgmtModal, QuickMatchModal, UserPinModal,
+  LeaderMatchModal,
   PlayerProfileModal, TournamentModal, FreeMatchModal, DataMgmtModal,
   getLevel, pairKey,
 } from "./components";
@@ -235,6 +236,7 @@ export default function App() {
   }, []);
   const isAdmin      = currentUser?.role === "admin";
   const isSuperuser  = currentUser?.role === "super" || isAdmin;
+  const isLeader     = currentUser?.role === "lider";
 
   // ── Guards AFTER all hooks ─────────────────────────────────────────────────
   if (loading) return (
@@ -584,13 +586,29 @@ export default function App() {
   }
 
   // ── Build screens ──────────────────────────────────────────────────────────
+  const [showCloseJornada,  setShowCloseJornada]  = useState(false);
+  const [showLeaderMatch,   setShowLeaderMatch]   = useState(false);
+
+  async function handleCloseJornada() {
+    if (!isAdmin) return;
+    // Save historial for all done matches (already done by handleConfirmMatch)
+    // Discard open matches silently after user confirmed each one
+    // Reset session completely
+    await clearSession();
+    // Reset attendance
+    const newAtt = {};
+    saveSession({ attending: newAtt }).catch(console.error);
+    setShowCloseJornada(false);
+    notify("Jornada cerrada. ¡Hasta la próxima! 🎾");
+  }
+
   const screens = getScreens({
     players, users, matchHistory, pairHistory, profiles,
     session, attending, courts, mode, matchType,
     matches, waitingPair, rotations, rotationStep, sittingOut,
     ranking, attendingPlayers, enrichedPairs, playerOfDay,
     suggestedCourts, remainder,
-    isAdmin, isSuperuser,
+    isAdmin, isSuperuser, isLeader,
     tournaments, setShowTournament, setShowFreeMatch, setShowDataMgmt,
     tab, setTab, playersSubTab, setPlayersSubTab, pairSearch, setPairSearch,
     toggleAttend, setAllAttend, setEditingPlayer, setViewingPlayer,
@@ -598,6 +616,9 @@ export default function App() {
     showSorteo, setShowSorteo,
     confirmCancel, setConfirmCancel, handleCancelMatch,
     busyPlayerIds: matches.filter(m => !m.done).flatMap(m => [...m.team1, ...m.team2].map(p => p.id)),
+    currentUser, toggleOwnAttend,
+    showCloseJornada, setShowCloseJornada, handleCloseJornada,
+    setShowLeaderMatch,
     handleGenerate, handleScoreChange, handleSetChange,
     handleConfirmMatch, handleConfirmRotation, handleRotationScore,
     writeSession,
@@ -690,6 +711,23 @@ export default function App() {
       )}
       {showUsersMgmt && isAdmin && (
         <UsersMgmtModal players={players} users={users} onClose={() => setShowUsersMgmt(false)} onSave={u => { saveUser(u).catch(console.error); notify("Usuario actualizado ✓"); }} />
+      )}
+      {showLeaderMatch && isLeader && (
+        <LeaderMatchModal
+          currentUser={currentUser}
+          matches={matches}
+          onSave={({ team1, team2, matchType: mt }) => {
+            const newMatch = {
+              id: Date.now(), team1, team2,
+              score1: "", score2: "", s0a: "", s0b: "", s1a: "", s1b: "", s2a: "", s2b: "",
+              matchType: mt || "short", done: false, free: true, tournamentId: null,
+            };
+            writeSession({ matches: [...matches, newMatch] });
+            notify("Partido agregado ⚡");
+            setShowLeaderMatch(false);
+          }}
+          onClose={() => setShowLeaderMatch(false)}
+        />
       )}
       {showQuickMatch && isAdmin && (
         <QuickMatchModal players={players} onSave={handleQuickMatchSave} onClose={() => setShowQuickMatch(false)} />

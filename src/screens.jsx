@@ -40,7 +40,7 @@ export function getScreens({
   ranking, attendingPlayers, enrichedPairs, playerOfDay,
   suggestedCourts, remainder,
   // auth
-  isAdmin, isSuperuser,
+  isAdmin, isSuperuser, isLeader,
   tournaments, setShowTournament, setShowFreeMatch, setShowDataMgmt,
   // ui state
   tab, setTab, playersSubTab, setPlayersSubTab, pairSearch, setPairSearch,
@@ -52,6 +52,9 @@ export function getScreens({
   handleConfirmMatch, handleConfirmRotation, handleRotationScore,
   confirmCancel, setConfirmCancel, handleCancelMatch,
   busyPlayerIds = [],
+  currentUser, toggleOwnAttend,
+  showCloseJornada, setShowCloseJornada, handleCloseJornada,
+  setShowLeaderMatch,
   writeSession,
 }) {
 
@@ -86,6 +89,36 @@ export function getScreens({
           {s.action && <span style={{ color: "#666", fontSize: 18 }}>›</span>}
         </div>
       ))}
+
+      {/* Attendance card — prominent for quick tap */}
+      {currentUser && (() => {
+        const iAmGoing = attending.has(currentUser.id);
+        return (
+          <div onClick={toggleOwnAttend}
+            style={{ marginBottom: 16, borderRadius: 16, padding: "18px 20px", cursor: "pointer", display: "flex", alignItems: "center", gap: 16,
+              background: iAmGoing ? "linear-gradient(135deg,#00d4aa22,#00d4aa08)" : "#ffffff08",
+              border: iAmGoing ? "2px solid #00d4aa" : "2px solid #ffffff20" }}>
+            <div style={{ width: 48, height: 48, borderRadius: 14, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 24,
+              background: iAmGoing ? "#00d4aa" : "#ffffff15" }}>
+              {iAmGoing ? "✓" : "🎾"}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 17, fontWeight: 900, color: iAmGoing ? "#00d4aa" : "#fff" }}>
+                {iAmGoing ? "¡Me sumo!" : "¿Te sumás?"}
+              </div>
+              <div style={{ fontSize: 13, color: iAmGoing ? "#00d4aa99" : "#aaa", marginTop: 2 }}>
+                {iAmGoing ? "Tocá para cancelar" : "Tocá para anotarte"}
+              </div>
+            </div>
+            {attendingPlayers.length > 0 && (
+              <div style={{ textAlign: "center", flexShrink: 0 }}>
+                <div style={{ fontSize: 22, fontWeight: 900, color: "#fff" }}>{attendingPlayers.length}</div>
+                <div style={{ fontSize: 10, color: "#aaa", fontWeight: 700 }}>VAN HOY</div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {matchHistory.length > 0 && (
         <HistorialSection matchHistory={matchHistory} />
@@ -422,10 +455,18 @@ export function getScreens({
               </div>
 
               {match.done ? (
-                <div style={{ textAlign: "center", padding: "10px", fontSize: 22, fontWeight: 800, color: "#00d4aa", letterSpacing: 5 }}>
-                  {match.score1} — {match.score2} ✓
-                </div>
-              ) : !isSuperuser ? (
+                <>
+                  <div style={{ textAlign: "center", padding: "10px", fontSize: 22, fontWeight: 800, color: "#00d4aa", letterSpacing: 5 }}>
+                    {match.score1} — {match.score2} ✓
+                  </div>
+                  {isLeader && currentUser && [...match.team1, ...match.team2].some(p => p.id === currentUser.id) && (
+                    <button onClick={() => setShowLeaderMatch(true)}
+                      style={{ width: "100%", background: "#00d4aa15", border: "1px solid #00d4aa33", borderRadius: 10, padding: "10px", color: "#00d4aa", fontWeight: 700, fontSize: 13, cursor: "pointer", marginTop: 8 }}>
+                      ⚡ Crear siguiente partido
+                    </button>
+                  )}
+                </>
+              ) : !isSuperuser && !(isLeader && currentUser && [...match.team1, ...match.team2].some(p => p.id === currentUser.id)) ? (
                 <div style={{ textAlign: "center", fontSize: 12, color: "#444", padding: "8px 0" }}>⏳ Esperando resultado…</div>
               ) : (match.matchType || matchType) === "long" ? (
                 <div style={{ padding: "0 4px" }}>
@@ -695,12 +736,79 @@ export function getScreens({
         </>
       )}
 
-      {!isSuperuser && (
+      {isAdmin && (
+        <>
+          <div style={{ fontSize: 12, color: "#fff", fontWeight: 800, letterSpacing: 1, marginTop: 24, marginBottom: 10 }}>JORNADA</div>
+          <button onClick={() => setShowCloseJornada(true)}
+            style={{ width: "100%", background: "#f59e0b11", border: "2px solid #f59e0b44", borderRadius: 14, padding: "18px 16px", color: "#f59e0b", fontWeight: 800, fontSize: 15, cursor: "pointer", textAlign: "left" }}>
+            <div style={{ fontSize: 18, marginBottom: 4 }}>🏁 Cerrar jornada</div>
+            <div style={{ fontSize: 12, color: "#aaa", fontWeight: 500 }}>Finaliza el día, guarda historial y resetea la sesión</div>
+          </button>
+        </>
+      )}
+
+      {!isSuperuser && !isLeader && (
         <div style={{ textAlign: "center", padding: "60px 0", color: "#444" }}>
           <div style={{ fontSize: 40, marginBottom: 12 }}>🔒</div>
           <div style={{ fontSize: 14, color: "#555" }}>Esta sección es solo para organizadores y admins.</div>
         </div>
       )}
+
+      {/* Close Jornada Modal */}
+      {showCloseJornada && (() => {
+        const openMatches = matches.filter(m => !m.done);
+        return (
+          <div style={{ position: "fixed", inset: 0, background: "#000000cc", zIndex: 300, display: "flex", alignItems: "flex-end", justifyContent: "center" }}
+            onClick={() => setShowCloseJornada(false)}>
+            <div style={{ background: "#181828", borderRadius: "20px 20px 0 0", padding: "24px 20px 40px", width: "100%", maxWidth: 440, border: "1px solid #ffffff15", maxHeight: "88vh", overflowY: "auto" }}
+              onClick={e => e.stopPropagation()}>
+              <div style={{ width: 40, height: 4, background: "#ffffff30", borderRadius: 2, margin: "0 auto 16px" }} />
+              <div style={{ fontSize: 18, fontWeight: 900, color: "#f59e0b", marginBottom: 6 }}>🏁 Cerrar jornada</div>
+              <div style={{ fontSize: 13, color: "#aaa", marginBottom: 20 }}>
+                Se guardará todo el historial registrado y la sesión quedará lista para la próxima jornada.
+              </div>
+
+              {openMatches.length > 0 ? (
+                <>
+                  <div style={{ background: "#ff6b6b11", border: "1px solid #ff6b6b33", borderRadius: 12, padding: "14px", marginBottom: 16 }}>
+                    <div style={{ fontSize: 14, fontWeight: 800, color: "#ff6b6b", marginBottom: 8 }}>
+                      ⚠️ {openMatches.length} partido{openMatches.length !== 1 ? "s" : ""} sin resultado
+                    </div>
+                    <div style={{ fontSize: 12, color: "#aaa" }}>Estos partidos se descartarán sin guardar resultado:</div>
+                  </div>
+                  {openMatches.map(m => (
+                    <div key={m.id} style={{ background: "#ffffff08", border: "1px solid #ffffff15", borderRadius: 10, padding: "12px 14px", marginBottom: 8 }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
+                        {m.team1.map(p => p.name).join(" & ")}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#888", margin: "2px 0" }}>vs</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#fff" }}>
+                        {m.team2.map(p => p.name).join(" & ")}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#ff6b6b", marginTop: 6, fontWeight: 700 }}>Se descartará sin guardar</div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <div style={{ background: "#00d4aa11", border: "1px solid #00d4aa33", borderRadius: 12, padding: "14px", marginBottom: 16 }}>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: "#00d4aa" }}>✓ Todos los partidos están cerrados</div>
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 10, marginTop: 8 }}>
+                <button onClick={() => setShowCloseJornada(false)}
+                  style={{ flex: 1, background: "transparent", border: "2px solid #ffffff20", borderRadius: 12, padding: "14px", color: "#fff", fontWeight: 700, fontSize: 14, cursor: "pointer" }}>
+                  Cancelar
+                </button>
+                <button onClick={handleCloseJornada}
+                  style={{ flex: 2, background: "#f59e0b", border: "none", borderRadius: 12, padding: "14px", color: "#fff", fontWeight: 800, fontSize: 14, cursor: "pointer" }}>
+                  🏁 Confirmar y cerrar jornada
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 

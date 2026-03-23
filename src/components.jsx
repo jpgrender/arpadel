@@ -77,16 +77,16 @@ export function SectionLabel({ children, style = {} }) {
 
 // ── RoleBadge ────────────────────────────────────────────────────────────────
 export function RoleBadge({ role }) {
-  const isAdmin = role === "admin";
-  const isSuper = role === "super";
+  const map = {
+    admin: { bg: "#0066ff33", border: "#0066ff", color: "#6ab4ff", label: "⚡ ADMIN" },
+    super: { bg: "#f59e0b22", border: "#f59e0b",  color: "#f59e0b", label: "🔧 SUPER" },
+    lider: { bg: "#00d4aa22", border: "#00d4aa",  color: "#00d4aa", label: "🎯 LÍDER" },
+    user:  { bg: "#ffffff10", border: "#ffffff20", color: "#666",    label: "👁 VIEWER" },
+  };
+  const s = map[role] || map.user;
   return (
-    <span style={{
-      background: isAdmin ? "#0066ff33" : isSuper ? "#f59e0b22" : "#ffffff10",
-      border: `1px solid ${isAdmin ? "#0066ff" : isSuper ? "#f59e0b" : "#ffffff20"}`,
-      color: isAdmin ? "#6ab4ff" : isSuper ? "#f59e0b" : "#666",
-      borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700, letterSpacing: 1,
-    }}>
-      {isAdmin ? "⚡ ADMIN" : isSuper ? "🔧 SUPER" : "👁 VIEWER"}
+    <span style={{ background: s.bg, border: `1px solid ${s.border}`, color: s.color, borderRadius: 6, padding: "2px 8px", fontSize: 10, fontWeight: 700, letterSpacing: 1 }}>
+      {s.label}
     </span>
   );
 }
@@ -239,17 +239,17 @@ export function PlayerModal({ player, profile, user, onSave, onSaveProfile, onSa
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 11, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 8 }}>ROL</div>
               <div style={{ display: 'flex', gap: 8 }}>
-                {[['admin','⚡ Admin','#6ab4ff'],['super','🔧 Super','#f59e0b'],['user','👁 Viewer','#888']].map(([val, label, color]) => (
+                {[['admin','⚡ Admin','#6ab4ff'],['super','🔧 Super','#f59e0b'],['lider','🎯 Líder','#00d4aa'],['user','👁 Viewer','#888']].map(([val, label, color]) => (
                   <div key={val} onClick={() => setu('role', val)} style={{ flex: 1, padding: '10px', borderRadius: 10, textAlign: 'center', cursor: 'pointer', fontSize: 12, fontWeight: 700, background: uform.role === val ? `${color}22` : '#ffffff08', border: uform.role === val ? `2px solid ${color}` : '2px solid transparent', color: uform.role === val ? color : '#555' }}>{label}</div>
                 ))}
               </div>
             </div>
             <div style={{ marginBottom: 20 }}>
               <div style={{ fontSize: 11, color: '#888', fontWeight: 700, letterSpacing: 1, marginBottom: 6 }}>
-                PIN ({uform.role === 'user' ? '4 dígitos' : '6 dígitos'})
+                PIN ({(uform.role === 'user' || uform.role === 'lider') ? '4 dígitos' : '6 dígitos'})
               </div>
               <input type='text' inputMode='numeric' value={uform.pin}
-                onChange={e => setu('pin', e.target.value.replace(/[^0-9]/g, '').slice(0, uform.role === 'user' ? 4 : 6))}
+                onChange={e => setu('pin', e.target.value.replace(/[^0-9]/g, '').slice(0, (uform.role === 'user' || uform.role === 'lider') ? 4 : 6))}
                 placeholder={uform.role === 'user' ? '0000' : '000000'}
                 style={inputStyle} />
               {user && <div style={{ fontSize: 11, color: '#555', marginTop: 6 }}>PIN actual: {user.pin}</div>}
@@ -1011,6 +1011,127 @@ export function FreeMatchModal({ players, tournaments, busyPlayerIds = [], onSav
   );
 }
 
+
+// ── LeaderMatchModal ─────────────────────────────────────────────────────────
+// Allows a Líder to create the next match using existing day pairs
+export function LeaderMatchModal({ currentUser, matches, onSave, onClose }) {
+  // Build pairs that already played (done matches)
+  const donePairs = [];
+  const seen = new Set();
+  matches.filter(m => m.done).forEach(m => {
+    [m.team1, m.team2].forEach(team => {
+      const key = team.map(p => p.id).sort().join('-');
+      if (!seen.has(key)) {
+        seen.add(key);
+        donePairs.push(team);
+      }
+    });
+  });
+
+  // Find the pair of the current user
+  const myPair = donePairs.find(pair => pair.some(p => p.id === currentUser.id));
+
+  const [rivalPair, setRivalPair] = useState(null);
+  const [matchType, setMatchType] = useState('short');
+
+  const availableRivals = donePairs.filter(pair =>
+    !pair.some(p => myPair?.some(mp => mp.id === p.id))
+  );
+
+  function handleSave() {
+    if (!myPair || !rivalPair) return;
+    onSave({ team1: myPair, team2: rivalPair, matchType });
+  }
+
+  if (!myPair) return (
+    <div style={{ position: 'fixed', inset: 0, background: '#000000cc', zIndex: 300, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ background: '#181828', borderRadius: '20px 20px 0 0', padding: '32px 20px 48px', width: '100%', maxWidth: 440, border: '1px solid #ffffff15' }} onClick={e => e.stopPropagation()}>
+        <div style={{ width: 40, height: 4, background: '#ffffff30', borderRadius: 2, margin: '0 auto 20px' }} />
+        <div style={{ textAlign: 'center', fontSize: 40, marginBottom: 12 }}>⚠️</div>
+        <div style={{ textAlign: 'center', fontSize: 15, color: '#fff', fontWeight: 700, marginBottom: 8 }}>No estás en ninguna pareja del día</div>
+        <div style={{ textAlign: 'center', fontSize: 13, color: '#aaa', marginBottom: 24 }}>Solo podés crear un partido si ya jugaste uno hoy como parte de una pareja.</div>
+        <button onClick={onClose} style={{ width: '100%', background: '#ffffff15', border: 'none', borderRadius: 12, padding: '14px', color: '#fff', fontWeight: 700, cursor: 'pointer' }}>Cerrar</button>
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: '#000000cc', zIndex: 300, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }} onClick={onClose}>
+      <div style={{ background: '#181828', borderRadius: '20px 20px 0 0', padding: '24px 20px 40px', width: '100%', maxWidth: 440, border: '1px solid #ffffff15', maxHeight: '90vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+        <div style={{ width: 40, height: 4, background: '#ffffff30', borderRadius: 2, margin: '0 auto 16px' }} />
+        <div style={{ fontSize: 18, fontWeight: 900, color: '#fff', marginBottom: 20 }}>⚡ Nuevo partido</div>
+
+        {/* Match type */}
+        <div style={{ fontSize: 12, color: '#fff', fontWeight: 800, letterSpacing: 1, marginBottom: 10 }}>TIPO DE PARTIDO</div>
+        <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+          {[['short', '⚡ Partido corto', '#00d4aa'], ['long', '🎾 Partido largo', '#6ab4ff']].map(([val, label, color]) => (
+            <div key={val} onClick={() => setMatchType(val)}
+              style={{ flex: 1, padding: '14px', borderRadius: 12, textAlign: 'center', cursor: 'pointer',
+                background: matchType === val ? `${color}22` : '#ffffff08',
+                border: matchType === val ? `2px solid ${color}` : '2px solid #ffffff15',
+                color: matchType === val ? color : '#aaa', fontWeight: 800, fontSize: 14 }}>
+              {label}
+            </div>
+          ))}
+        </div>
+
+        {/* My pair — preselected */}
+        <div style={{ fontSize: 12, color: '#00d4aa', fontWeight: 800, letterSpacing: 1, marginBottom: 8 }}>TU PAREJA</div>
+        <div style={{ background: '#00d4aa18', border: '2px solid #00d4aa', borderRadius: 12, padding: '14px 16px', marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            {myPair.map(p => (
+              <div key={p.id} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Avatar name={p.name} pts={p.pts} size={34} />
+                <span style={{ fontSize: 15, fontWeight: 800, color: '#fff' }}>{p.name}</span>
+                {p.id === currentUser.id && <span style={{ fontSize: 10, color: '#00d4aa', fontWeight: 700 }}>TÚ</span>}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Rival pair selection */}
+        <div style={{ fontSize: 12, color: '#6ab4ff', fontWeight: 800, letterSpacing: 1, marginBottom: 10 }}>ELEGÍ EL RIVAL</div>
+        {availableRivals.length === 0 ? (
+          <div style={{ background: '#ffffff08', borderRadius: 12, padding: '16px', textAlign: 'center', color: '#555', fontSize: 13, marginBottom: 16 }}>
+            No hay parejas disponibles aún.<br/>Las parejas aparecen cuando terminan su partido.
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 20 }}>
+            {availableRivals.map((pair, i) => {
+              const key = pair.map(p => p.id).sort().join('-');
+              const selected = rivalPair && rivalPair.map(p => p.id).sort().join('-') === key;
+              return (
+                <div key={i} onClick={() => setRivalPair(pair)}
+                  style={{ background: selected ? '#6ab4ff18' : '#ffffff08', border: selected ? '2px solid #6ab4ff' : '2px solid #ffffff15', borderRadius: 12, padding: '14px 16px', cursor: 'pointer' }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+                    {pair.map(p => (
+                      <div key={p.id} style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                        <Avatar name={p.name} pts={p.pts} size={32} />
+                        <span style={{ fontSize: 14, fontWeight: 700, color: '#fff' }}>{p.name}</span>
+                      </div>
+                    ))}
+                    {selected && <span style={{ color: '#6ab4ff', fontWeight: 800, fontSize: 16, flexShrink: 0 }}>✓</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button onClick={onClose}
+            style={{ flex: 1, background: 'transparent', border: '2px solid #ffffff20', borderRadius: 12, padding: '14px', color: '#fff', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+            Cancelar
+          </button>
+          <button onClick={handleSave} disabled={!rivalPair}
+            style={{ flex: 2, background: rivalPair ? 'linear-gradient(135deg,#00d4aa,#0066ff)' : '#333', border: 'none', borderRadius: 12, padding: '14px', color: rivalPair ? '#fff' : '#666', fontWeight: 800, fontSize: 14, cursor: rivalPair ? 'pointer' : 'not-allowed' }}>
+            ⚡ Crear partido
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── DataMgmtModal ─────────────────────────────────────────────────────────────
 export function DataMgmtModal({ players, onClose, onClear }) {
